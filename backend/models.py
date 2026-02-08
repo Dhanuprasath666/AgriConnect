@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
+
 from database import Base
 
 class User(Base):
@@ -6,13 +7,27 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    name = Column(String, nullable=False)
-    mobile = Column(String, unique=True, index=True, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=True)
+    name = Column(String)
+    age = Column(Integer)
 
-    password = Column(String, nullable=False)
-    role = Column(String, nullable=False)
+    mobile = Column(String, unique=True, index=True)
+    alternate_phone = Column(String)
+
+    aadhar_number = Column(String)
+
+    email = Column(String, nullable=True)
 
     state = Column(String)
     district = Column(String)
     village = Column(String)
+    pincode = Column(String)
+
+    soil_type = Column(String)
+    land_area = Column(String)
+    primary_crops = Column(String)
+
+    password = Column(String)
+    role = Column(String)
+
+
+

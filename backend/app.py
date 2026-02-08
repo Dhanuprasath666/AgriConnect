@@ -4,7 +4,8 @@ from database import SessionLocal, engine
 from models import Base, User
 from schemas import RegisterUser, LoginUser
 from auth import hash_password, verify_password
-from token import create_access_token, verify_token
+from auth_token import create_access_token, verify_token
+
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
@@ -43,25 +44,33 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 @app.post("/register")
 def register(user: RegisterUser, db: Session = Depends(get_db)):
 
-    exists = db.query(User).filter(User.mobile == user.mobile).first()
-    if exists:
-        raise HTTPException(status_code=400, detail="Mobile already registered")
+    existing_user = db.query(User).filter(User.mobile == user.mobile).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Mobile number already registered")
 
     new_user = User(
         name=user.name,
+        age=user.age,
         mobile=user.mobile,
+        alternate_phone=user.alternate_phone,
+        aadhar_number=user.aadhar_number,
         email=user.email,
         password=hash_password(user.password),
-        role=user.role,
         state=user.state,
         district=user.district,
-        village=user.village
+        village=user.village,
+        pincode=user.pincode,
+        soil_type=user.soil_type,
+        land_area=user.land_area,
+        primary_crops=user.primary_crops,
+        role=user.role
     )
 
     db.add(new_user)
     db.commit()
 
     return {"message": "Registered successfully"}
+
 
 
 @app.post("/login")
@@ -75,12 +84,12 @@ def login(user: LoginUser, db: Session = Depends(get_db)):
     if not verify_password(user.password, db_user.password):
         raise HTTPException(status_code=400, detail="Invalid credentials")
 
-    token = create_access_token({
-        "user_id": db_user.id,
-        "role": db_user.role
-    })
+    return {
+        "message": "Login success",
+        "role": db_user.role,
+        "user_id": db_user.id
+    }
 
-    return {"access_token": token, "role": db_user.role}
 
 # ---------------- COMMON PROTECTED ROUTES ----------------
 
@@ -136,3 +145,4 @@ def consumer_dashboard(user=Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Consumer only access")
 
     return {"message": "Welcome Consumer"}
+
