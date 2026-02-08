@@ -1,10 +1,21 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database import engine, SessionLocal
+from database import SessionLocal, engine
 from models import Base, User
-from schemas import UserCreate, UserLogin
+from schemas import RegisterUser, LoginUser
+from auth import hash_password, verify_password
+
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 Base.metadata.create_all(bind=engine)
 
@@ -17,33 +28,32 @@ def get_db():
 
 # Register
 @app.post("/register")
-def register(user: UserCreate, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.username == user.username).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Username already exists")
-
+def register(user: RegisterUser, db: Session = Depends(get_db)):
     new_user = User(
-        username=user.username,
-        password=user.password,
+        mobile=user.mobile,
+        password=hash_password(user.password),
         role=user.role
     )
 
     db.add(new_user)
     db.commit()
-    db.refresh(new_user)
 
-    return {"message": "User registered successfully"}
+    return {"message": "Registered successfully"}
+
 
 # Login
 @app.post("/login")
-def login(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.username == user.username).first()
+def login(user: LoginUser, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.mobile == user.mobile).first()
 
-    if not db_user or db_user.password != user.password:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    if not db_user:
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+
+    if not verify_password(user.password, db_user.password):
+        raise HTTPException(status_code=400, detail="Invalid credentials")
 
     return {
-        "message": "Login successful",
-        "username": db_user.username,
-        "role": db_user.role
+        "message": "Login success",
+        "role": db_user.role,
+        "user_id": db_user.id
     }
