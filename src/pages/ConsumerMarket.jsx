@@ -1,39 +1,39 @@
 import React, { useEffect, useState } from "react";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { db } from "../firebase";
 import "../style.css";
 
 const ConsumerMarket = () => {
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // ✅ Load on page open
   useEffect(() => {
-    const data =
-      JSON.parse(localStorage.getItem("market_items")) || [];
-    setItems(data);
-  }, []);
+    // 🔥 realtime Firestore listener
+    const q = query(
+      collection(db, "marketItems"),
+      orderBy("createdAt", "desc")
+    );
 
-  // 🔁 PRO: Listen for storage updates
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const data =
-        JSON.parse(localStorage.getItem("market_items")) || [];
+    const unsub = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
       setItems(data);
-    };
+      setLoading(false);
+    });
 
-    window.addEventListener("storage", handleStorageChange);
-
-    return () => {
-      window.removeEventListener(
-        "storage",
-        handleStorageChange
-      );
-    };
+    return () => unsub();
   }, []);
 
   return (
     <div className="market-container">
       <h2 className="market-title">🛒 Consumer Market</h2>
 
-      {items.length === 0 ? (
+      {loading ? (
+        <p className="market-empty">Loading products...</p>
+      ) : items.length === 0 ? (
         <p className="market-empty">
           No products available yet.
         </p>
@@ -45,8 +45,11 @@ const ConsumerMarket = () => {
               className="market-card consumer-card"
             >
               <h3>{item.name}</h3>
+
               <p>💰 ₹{item.price} / kg</p>
+
               <p>📦 {item.quantity} kg</p>
+
               <p>📍 {item.location}</p>
             </div>
           ))}

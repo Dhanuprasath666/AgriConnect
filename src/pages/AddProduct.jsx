@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../firebase";
 import "../style.css";
 
 const AddProduct = () => {
@@ -10,31 +12,28 @@ const AddProduct = () => {
   const [quantity, setQuantity] = useState("");
   const [location, setLocation] = useState("");
 
-  const handleSubmit = (e) => {
+  // 🔥 THIS FUNCTION RUNS ONLY WHEN CALLED
+  const addProductToMarket = async (product) => {
+    await addDoc(collection(db, "marketItems"), {
+      ...product,
+      createdAt: serverTimestamp(),
+    });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 1️⃣ Read existing items
-    const existing =
-      JSON.parse(localStorage.getItem("market_items")) || [];
-
     const newItem = {
-      id: Date.now(),
       name,
       price,
       quantity,
       location,
     };
 
-    // 2️⃣ Push new item
-    existing.push(newItem);
+    // 👉 Firebase called HERE
+    await addProductToMarket(newItem);
 
-    localStorage.setItem(
-      "market_items",
-      JSON.stringify(existing)
-    );
-
-    // 3️⃣ Redirect farmer back
-    alert("ADDED SUCCESSFULLY")
+    alert("ADDED SUCCESSFULLY");
     navigate("/farmer/dashboard");
   };
 
@@ -75,10 +74,7 @@ const AddProduct = () => {
           required
         />
 
-        <button
-          className="market-btn add-submit"
-          type="submit"
-        >
+        <button className="market-btn add-submit" type="submit">
           Add to Market
         </button>
       </form>
