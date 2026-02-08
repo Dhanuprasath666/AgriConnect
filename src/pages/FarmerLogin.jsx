@@ -117,7 +117,7 @@ const FarmerLogin = () => {
         <section className="fl-auth-shell">
           <div className="fl-auth-head">
             <p className="fl-auth-kicker">Secure Access</p>
-            <h2>Farmer Sign In</h2>
+            <h2>Farmer Log In</h2>
             <p className="fl-form-subtitle">
               Enter your registered credentials to continue.
             </p>
