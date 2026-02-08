@@ -25,21 +25,30 @@ def get_db():
         yield db
     finally:
         db.close()
-
-# Register
+#Register
 @app.post("/register")
 def register(user: RegisterUser, db: Session = Depends(get_db)):
+
+    # check mobile exists
+    existing = db.query(User).filter(User.mobile == user.mobile).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Mobile already registered")
+
     new_user = User(
+        name=user.name,
         mobile=user.mobile,
+        email=user.email,
         password=hash_password(user.password),
-        role=user.role
+        role=user.role,
+        state=user.state,
+        district=user.district,
+        village=user.village
     )
 
     db.add(new_user)
     db.commit()
 
     return {"message": "Registered successfully"}
-
 
 # Login
 @app.post("/login")
