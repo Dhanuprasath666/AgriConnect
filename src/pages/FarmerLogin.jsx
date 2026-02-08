@@ -1,56 +1,173 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import "../style.css";
 
 const FarmerLogin = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeMessageIndex, setActiveMessageIndex] = useState(0);
+
+  const dynamicMessages = [
+    "Check pending orders in one place",
+    "Update produce pricing in seconds",
+    "Publish new inventory without delays",
+    "Track urgent sales with full clarity",
+  ];
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setActiveMessageIndex((previousIndex) =>
+        (previousIndex + 1) % dynamicMessages.length
+      );
+    }, 2600);
+
+    return () => clearInterval(intervalId);
+  }, [dynamicMessages.length]);
+
+  const isAllowedEntry = location.state?.farmerLoginAccess === "top-nav";
+
+  if (!isAllowedEntry) {
+    return <Navigate to="/" replace />;
+  }
 
   const handleLogin = async () => {
-    const res = await fetch("http://127.0.0.1:8000/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mobile: mobile,
-        password: password
-      })
-    });
+    if (!mobile.trim() || !password.trim()) {
+      setError("Please enter both mobile number and password.");
+      return;
+    }
 
-    const data = await res.json();
+    setError("");
+    setIsLoading(true);
 
-    if (res.ok && data.role === "farmer") {
-      navigate("/farmer/dashboard");
-    } else {
-      alert("Invalid credentials");
+    try {
+      const res = await fetch("http://127.0.0.1:8000/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mobile: mobile.trim(),
+          password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.role === "farmer") {
+        navigate("/farmer/dashboard");
+        return;
+      }
+
+      setError("Invalid mobile number or password.");
+    } catch (networkError) {
+      setError("Unable to connect to server. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEnterSubmit = (event) => {
+    if (event.key === "Enter") {
+      handleLogin();
     }
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
+    <div className="fl-page">
+      <div className="fl-backdrop-grid" aria-hidden="true"></div>
 
-        <h2>👨‍🌾 Farmer Login Portal</h2>
-
-        <input
-          type="text"
-          placeholder="Enter Mobile Number"
-          className="auth-input"
-          onChange={(e) => setMobile(e.target.value)}
-        />
-
-        <input
-          type="password"
-          placeholder="Enter Password"
-          className="auth-input"
-          onChange={(e) => setPassword(e.target.value)}
-        />
-
-        <button className="auth-button" onClick={handleLogin}>
-          Continue
+      <header className="fl-topbar">
+        <button className="fl-brand" onClick={() => navigate("/")}>
+          AgriConnect
         </button>
+        <button className="fl-back-btn" onClick={() => navigate("/")}>
+          Back to Home
+        </button>
+      </header>
 
-      </div>
+      <main className="fl-main">
+        <section className="fl-story">
+          <p className="fl-kicker">Farmer Command Center</p>
+          <h1>Simple, focused sign-in for your daily farm operations.</h1>
+          <p className="fl-intro-text">
+            Access your dashboard to manage stock, orders, and farmer workflow
+            with speed and confidence.
+          </p>
+
+          <div className="fl-dynamic-card">
+            <p className="fl-dynamic-label">Now in focus</p>
+            <h3 className="fl-dynamic-message" key={activeMessageIndex}>
+              {dynamicMessages[activeMessageIndex]}
+            </h3>
+            <div className="fl-dynamic-dots" aria-hidden="true">
+              {dynamicMessages.map((_, index) => (
+                <span
+                  key={index}
+                  className={`fl-dynamic-dot ${
+                    index === activeMessageIndex ? "is-active" : ""
+                  }`}
+                ></span>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="fl-auth-shell">
+          <div className="fl-auth-head">
+            <p className="fl-auth-kicker">Secure Access</p>
+            <h2>Farmer Sign In</h2>
+            <p className="fl-form-subtitle">
+              Enter your registered credentials to continue.
+            </p>
+          </div>
+
+          <div className="fl-auth-card">
+            <label className="fl-label" htmlFor="mobile">
+              Mobile Number
+            </label>
+            <input
+              id="mobile"
+              type="text"
+              placeholder="Enter mobile number"
+              className="fl-input"
+              value={mobile}
+              onChange={(event) => setMobile(event.target.value)}
+              onKeyDown={handleEnterSubmit}
+              autoComplete="tel"
+            />
+
+            <label className="fl-label" htmlFor="password">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              placeholder="Enter password"
+              className="fl-input"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              onKeyDown={handleEnterSubmit}
+              autoComplete="current-password"
+            />
+
+            {error && <p className="fl-error">{error}</p>}
+
+            <button
+              className="fl-submit-btn"
+              onClick={handleLogin}
+              disabled={isLoading}
+            >
+              {isLoading ? "Signing in..." : "Login"}
+            </button>
+
+            <p className="fl-help-text">
+              Need access help? Contact your AgriConnect administrator.
+            </p>
+          </div>
+        </section>
+      </main>
     </div>
   );
 };

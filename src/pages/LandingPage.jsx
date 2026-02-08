@@ -1,4 +1,3 @@
-// src/pages/LandingPage.jsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import "../style.css";
@@ -7,7 +6,16 @@ import farmBg from "../assets/farm-bg.jpg";
 const LandingPage = () => {
   const navigate = useNavigate();
 
-  // 🔥 Temporary frontend data (later from backend)
+  const openFarmerLoginFromTop = () => {
+    navigate("/farmer/login", {
+      state: { farmerLoginAccess: "top-nav" },
+    });
+  };
+
+  const focusTopFarmerLogin = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const urgentCrops = [
     {
       id: 1,
@@ -32,130 +40,181 @@ const LandingPage = () => {
     },
   ];
 
+  const features = [
+    {
+      id: 1,
+      title: "Direct farm sourcing",
+      description:
+        "Consumers buy produce directly from nearby farmers, reducing extra costs and improving freshness.",
+      label: "Transparent pricing",
+    },
+    {
+      id: 2,
+      title: "Smart urgency deals",
+      description:
+        "Low shelf-life products get highlighted quickly so farmers sell faster and food waste is reduced.",
+      label: "Waste reduction",
+    },
+    {
+      id: 3,
+      title: "Verified quality signals",
+      description:
+        "Listings include quantity, freshness windows, and pickup details so buyers can decide with confidence.",
+      label: "Trust first",
+    },
+  ];
+
   return (
-    <>
-      {/* NAVBAR */}
-      <nav className="navbar">
-        <div className="nav-logo">🌱 AgriConnect</div>
-        <ul className="nav-links">
-          <li onClick={() => navigate("/")}>Home</li>
-          <li>Language</li>
-          <li>Farmers</li>
-          <li>Consumers</li>
-          <li onClick={() => navigate("/login")}>Login</li>
-        </ul>
-      </nav>
+    <div className="lp-page">
+      <div className="lp-bg-orb lp-bg-orb-one" aria-hidden="true"></div>
+      <div className="lp-bg-orb lp-bg-orb-two" aria-hidden="true"></div>
 
-      {/* HERO SECTION */}
-      <div
-        className="landing-container"
-        style={{ backgroundImage: `url(${farmBg})` }}
-      >
-        <div className="landing-overlay"></div>
+      <header className="lp-nav">
+        <button className="lp-brand" onClick={() => navigate("/")}>
+          <span className="lp-brand-mark">AC</span>
+          <span className="lp-brand-name">AgriConnect</span>
+        </button>
 
-        <div className="landing-card">
-          <h1 className="landing-title">🌱 AgriConnect</h1>
-          <p className="landing-subtitle">
-            Connecting Farmers and Consumers with Trust and Transparency
-          </p>
+        <div className="lp-nav-links">
+          <a href="#features">Features</a>
+          <a href="#deals">Deals</a>
+          <button className="lp-nav-login" onClick={openFarmerLoginFromTop}>
+            Farmer Login
+          </button>
+        </div>
+      </header>
 
-          <div className="landing-buttons">
+      <main className="lp-main">
+        <section
+          className="lp-hero"
+          style={{ backgroundImage: `url(${farmBg})` }}
+        >
+          <div className="lp-hero-overlay"></div>
+
+          <div className="lp-hero-content">
+            <p className="lp-kicker">Farm to home marketplace</p>
+            <h1>Modern produce commerce for farmers and families.</h1>
+            <p className="lp-hero-text">
+              AgriConnect helps farmers sell efficiently and helps consumers buy
+              fresher products with trusted listing details and fair pricing.
+            </p>
+
+            <div className="lp-hero-actions">
+              <button
+                className="lp-btn lp-btn-primary"
+                onClick={focusTopFarmerLogin}
+              >
+                Register
+              </button>
+              <button
+                className="lp-btn lp-btn-secondary"
+                onClick={() => navigate("/consumer")}
+              >
+                Explore Marketplace
+              </button>
+            </div>
+
+            <div className="lp-stats">
+              <article className="lp-stat">
+                <h3>10</h3>
+                <p>Local farmers onboarded</p>
+              </article>
+              <article className="lp-stat">
+                <h3>30%</h3>
+                <p>Less post-harvest waste</p>
+              </article>
+              <article className="lp-stat">
+                <h3>24h</h3>
+                <p>Average listing response time</p>
+              </article>
+            </div>
+          </div>
+
+          <aside className="lp-hero-panel">
+            <p className="lp-panel-kicker">Market snapshot</p>
+            <h2>High-demand categories this week</h2>
+
+            <div className="lp-panel-list">
+              <div className="lp-panel-item">
+                <span>Leafy vegetables</span>
+                <strong>+18% demand</strong>
+              </div>
+              <div className="lp-panel-item">
+                <span>Seasonal fruits</span>
+                <strong>+12% demand</strong>
+              </div>
+              <div className="lp-panel-item">
+                <span>Organic staples</span>
+                <strong>+9% demand</strong>
+              </div>
+            </div>
+
             <button
-              className="farmer-btn"
-              onClick={() => navigate("/farmer/login")}
-            >
-              👨‍🌾 Farmer Login
-            </button>
-
-            <button
-              className="consumer-btn"
+              className="lp-btn lp-btn-panel"
               onClick={() => navigate("/consumer")}
             >
-              🧑‍💻 Explore as Consumer
+              View Consumer Dashboard
             </button>
+          </aside>
+        </section>
+
+        <section className="lp-section" id="features">
+          <div className="lp-section-head">
+            <p>Why AgriConnect</p>
+            <h2>Built for reliability, fairness, and growth</h2>
           </div>
 
-          <p className="landing-footer">Fresh • Local • Transparent</p>
-        </div>
-      </div>
+          <div className="lp-feature-grid">
+            {features.map((feature) => (
+              <article className="lp-feature-card" key={feature.id}>
+                <span className="lp-feature-label">{feature.label}</span>
+                <h3>{feature.title}</h3>
+                <p>{feature.description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
 
-      {/* 🌟 VALUE / FEATURE SECTION (INFORMATION BASED) */}
-      <section className="features-section">
-        <h2 className="features-title">Why AgriConnect?</h2>
-        <p className="features-subtitle">
-          A smarter way to buy and sell agricultural produce
-        </p>
-
-        <div className="features-grid">
-          <div className="feature-card">
-            <div className="feature-icon">🚜</div>
-            <h3>Direct From Farmers</h3>
-            <p>
-              Buy fresh produce straight from farmers without middlemen,
-              ensuring fair prices for both sides.
-            </p>
+        <section className="lp-section lp-section-muted" id="deals">
+          <div className="lp-section-head">
+            <p>Ending soon</p>
+            <h2>Urgent deals currently available</h2>
           </div>
 
-          <div className="feature-card">
-            <div className="feature-icon">⏳</div>
-            <h3>Urgent Crop Savings</h3>
-            <p>
-              Get discounted crops when their shelf life is ending —
-              reducing waste and saving money.
-            </p>
-          </div>
-
-          <div className="feature-card">
-            <div className="feature-icon">🔍</div>
-            <h3>Transparent Listings</h3>
-            <p>
-              See real-time details like quantity, freshness, and pricing
-              before you buy.
-            </p>
-          </div>
-
-          <div className="feature-card">
-            <div className="feature-icon">🌍</div>
-            <h3>Sustainable Impact</h3>
-            <p>
-              Support sustainable farming and reduce food waste through
-              smarter consumption.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* 🔥 URGENT DEALS SECTION */}
-      <section className="urgent-section">
-        <h2 className="urgent-title">Ending Soon</h2>
-        <p className="urgent-subtitle">
-          Limited-time offers added by farmers
-        </p>
-
-        <div className="urgent-slider">
-          <div className="urgent-track">
+          <div className="lp-deals-grid">
             {urgentCrops.map((crop) => (
-              <div className="urgent-card" key={crop.id}>
+              <article className="lp-deal-card" key={crop.id}>
                 <h3>{crop.name}</h3>
-
-                <p className="urgent-discount">{crop.discount}</p>
-
-                <p className="urgent-info">
-                  {crop.quantity} • {crop.daysLeft} remaining
+                <p className="lp-deal-discount">{crop.discount}</p>
+                <p className="lp-deal-meta">
+                  {crop.quantity} available / {crop.daysLeft} left
                 </p>
-
                 <button
-                  className="urgent-btn"
+                  className="lp-btn lp-btn-primary lp-btn-small"
                   onClick={() => navigate("/consumer/login")}
                 >
                   Buy Now
                 </button>
-              </div>
+              </article>
             ))}
           </div>
-        </div>
-      </section>
-    </>
+        </section>
+
+        <section className="lp-cta">
+          <h2>Bring your produce business online with confidence.</h2>
+          <p>
+            Create listings faster, reach nearby consumers, and improve
+            profitability with transparent digital workflows.
+          </p>
+          <button
+            className="lp-btn lp-btn-primary"
+            onClick={focusTopFarmerLogin}
+          >
+            Register 
+          </button>
+        </section>
+      </main>
+    </div>
   );
 };
 
