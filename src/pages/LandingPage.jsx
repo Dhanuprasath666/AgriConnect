@@ -12,10 +12,6 @@ const LandingPage = () => {
     });
   };
 
-  const focusTopFarmerLogin = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
   const urgentCrops = [
     {
       id: 1,
@@ -102,7 +98,7 @@ const LandingPage = () => {
             <div className="lp-hero-actions">
               <button
                 className="lp-btn lp-btn-primary"
-                onClick={focusTopFarmerLogin}
+                onClick={() => navigate("/register")}
               >
                 Register
               </button>
@@ -116,10 +112,6 @@ const LandingPage = () => {
 
             <div className="lp-stats">
               <article className="lp-stat">
-                <h3>10</h3>
-                <p>Local farmers onboarded</p>
-              </article>
-              <article className="lp-stat">
                 <h3>30%</h3>
                 <p>Less post-harvest waste</p>
               </article>
@@ -129,33 +121,6 @@ const LandingPage = () => {
               </article>
             </div>
           </div>
-
-          <aside className="lp-hero-panel">
-            <p className="lp-panel-kicker">Market snapshot</p>
-            <h2>High-demand categories this week</h2>
-
-            <div className="lp-panel-list">
-              <div className="lp-panel-item">
-                <span>Leafy vegetables</span>
-                <strong>+18% demand</strong>
-              </div>
-              <div className="lp-panel-item">
-                <span>Seasonal fruits</span>
-                <strong>+12% demand</strong>
-              </div>
-              <div className="lp-panel-item">
-                <span>Organic staples</span>
-                <strong>+9% demand</strong>
-              </div>
-            </div>
-
-            <button
-              className="lp-btn lp-btn-panel"
-              onClick={() => navigate("/consumer")}
-            >
-              View Consumer Dashboard
-            </button>
-          </aside>
         </section>
 
         <section className="lp-section" id="features">
@@ -208,7 +173,7 @@ const LandingPage = () => {
           </p>
           <button
             className="lp-btn lp-btn-primary"
-            onClick={focusTopFarmerLogin}
+            onClick={() => navigate("/register")}
           >
             Register 
           </button>

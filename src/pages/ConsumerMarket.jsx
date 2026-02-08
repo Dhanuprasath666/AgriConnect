@@ -8,11 +8,7 @@ const ConsumerMarket = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 🔥 realtime Firestore listener
-    const q = query(
-      collection(db, "marketItems"),
-      orderBy("createdAt", "desc")
-    );
+    const q = query(collection(db, "marketItems"), orderBy("createdAt", "desc"));
 
     const unsub = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map((doc) => ({
@@ -29,28 +25,27 @@ const ConsumerMarket = () => {
 
   return (
     <div className="market-container">
-      <h2 className="market-title">🛒 Consumer Market</h2>
+      <h2 className="market-title">Consumer Market</h2>
 
       {loading ? (
         <p className="market-empty">Loading products...</p>
       ) : items.length === 0 ? (
-        <p className="market-empty">
-          No products available yet.
-        </p>
+        <p className="market-empty">No products available yet.</p>
       ) : (
         <div className="market-grid">
           {items.map((item) => (
-            <div
-              key={item.id}
-              className="market-card consumer-card"
-            >
-              <h3>{item.name}</h3>
+            <div key={item.id} className="market-card consumer-card">
+              <h3>{item.productName || item.name || "Unnamed Product"}</h3>
 
-              <p>💰 ₹{item.price} / kg</p>
+              <p>
+                Price: INR {item.pricePerKg ?? item.price ?? "-"} / {item.unit || "kg"}
+              </p>
 
-              <p>📦 {item.quantity} kg</p>
+              <p>
+                Quantity: {item.quantityKg ?? item.quantity ?? "-"} {item.unit || "kg"}
+              </p>
 
-              <p>📍 {item.location}</p>
+              <p>Location: {item.location || "Location not specified"}</p>
             </div>
           ))}
         </div>
