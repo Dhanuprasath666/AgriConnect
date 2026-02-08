@@ -4,11 +4,13 @@ from database import SessionLocal, engine
 from models import Base, User
 from schemas import RegisterUser, LoginUser
 from auth import hash_password, verify_password
+from token import create_access_token, verify_token
 
 from fastapi.middleware.cors import CORSMiddleware
-
+from fastapi.security import OAuth2PasswordBearer
 
 app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,13 +27,24 @@ def get_db():
         yield db
     finally:
         db.close()
-#Register
+
+# ---------------- AUTH SETUP ----------------
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    payload = verify_token(token)
+    if payload is None:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return payload
+
+# ---------------- PUBLIC ROUTES ----------------
+
 @app.post("/register")
 def register(user: RegisterUser, db: Session = Depends(get_db)):
 
-    # check mobile exists
-    existing = db.query(User).filter(User.mobile == user.mobile).first()
-    if existing:
+    exists = db.query(User).filter(User.mobile == user.mobile).first()
+    if exists:
         raise HTTPException(status_code=400, detail="Mobile already registered")
 
     new_user = User(
@@ -50,9 +63,10 @@ def register(user: RegisterUser, db: Session = Depends(get_db)):
 
     return {"message": "Registered successfully"}
 
-# Login
+
 @app.post("/login")
 def login(user: LoginUser, db: Session = Depends(get_db)):
+
     db_user = db.query(User).filter(User.mobile == user.mobile).first()
 
     if not db_user:
@@ -61,8 +75,64 @@ def login(user: LoginUser, db: Session = Depends(get_db)):
     if not verify_password(user.password, db_user.password):
         raise HTTPException(status_code=400, detail="Invalid credentials")
 
+    token = create_access_token({
+        "user_id": db_user.id,
+        "role": db_user.role
+    })
+
+    return {"access_token": token, "role": db_user.role}
+
+# ---------------- COMMON PROTECTED ROUTES ----------------
+
+@app.get("/profile")
+def get_profile(user=Depends(get_current_user),
+                db: Session = Depends(get_db)):
+
+    db_user = db.query(User).filter(User.id == user["user_id"]).first()
+
     return {
-        "message": "Login success",
+        "name": db_user.name,
+        "mobile": db_user.mobile,
+        "email": db_user.email,
         "role": db_user.role,
-        "user_id": db_user.id
+        "state": db_user.state,
+        "district": db_user.district,
+        "village": db_user.village
     }
+
+
+@app.put("/profile")
+def update_profile(data: RegisterUser,
+                   user=Depends(get_current_user),
+                   db: Session = Depends(get_db)):
+
+    db_user = db.query(User).filter(User.id == user["user_id"]).first()
+
+    db_user.name = data.name
+    db_user.email = data.email
+    db_user.state = data.state
+    db_user.district = data.district
+    db_user.village = data.village
+
+    db.commit()
+    return {"message": "Profile updated"}
+
+# ---------------- FARMER ROUTES ----------------
+
+@app.get("/farmer/dashboard")
+def farmer_dashboard(user=Depends(get_current_user)):
+
+    if user["role"] != "farmer":
+        raise HTTPException(status_code=403, detail="Farmer only access")
+
+    return {"message": "Welcome Farmer"}
+
+# ---------------- CONSUMER ROUTES ----------------
+
+@app.get("/consumer/dashboard")
+def consumer_dashboard(user=Depends(get_current_user)):
+
+    if user["role"] != "consumer":
+        raise HTTPException(status_code=403, detail="Consumer only access")
+
+    return {"message": "Welcome Consumer"}

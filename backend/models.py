@@ -11,8 +11,8 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=True)
 
     password = Column(String, nullable=False)
-    role = Column(String, nullable=False)   # farmer / consumer
+    role = Column(String, nullable=False)
 
-    state = Column(String, nullable=True)
-    district = Column(String, nullable=True)
-    village = Column(String, nullable=True)
+    state = Column(String)
+    district = Column(String)
+    village = Column(String)
