@@ -100,7 +100,7 @@ const FarmerLogin = () => {
 
       <header className="fl-topbar">
         <button className="fl-brand" onClick={() => navigate("/")}>
-          AgriConnect
+          <span className="ac-brand-text">AC</span>
         </button>
         <button className="fl-back-btn" onClick={() => navigate("/")}>
           Back to Home
@@ -183,7 +183,9 @@ const FarmerLogin = () => {
             </button>
 
             <p className="fl-help-text">
-              Need access help? Contact your AgriConnect administrator.
+              Need access help? Contact your{" "}
+              <span className="ac-brand-text ac-brand-text--inline">AC</span>{" "}
+              administrator.
             </p>
           </div>
         </section>

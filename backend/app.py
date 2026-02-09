@@ -251,6 +251,38 @@ def _build_location_query(db_user: User) -> str:
 
 @app.post("/register")
 def register(user: RegisterUser, db: Session = Depends(get_db)):
+    role = (user.role or "").strip().lower()
+
+    if role not in {"farmer", "consumer"}:
+        raise HTTPException(status_code=422, detail="Invalid role.")
+
+    if role == "farmer":
+        required_fields = [
+            ("age", user.age),
+            ("alternate_phone", user.alternate_phone),
+            ("aadhar_number", user.aadhar_number),
+            ("state", user.state),
+            ("district", user.district),
+            ("village", user.village),
+            ("pincode", user.pincode),
+            ("soil_type", user.soil_type),
+            ("land_area", user.land_area),
+            ("primary_crops", user.primary_crops),
+        ]
+    else:
+        required_fields = [
+            ("alternate_phone", user.alternate_phone),
+            ("state", user.state),
+            ("district", user.district),
+            ("village", user.village),
+        ]
+
+    missing = [name for name, value in required_fields if value is None or str(value).strip() == ""]
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Missing required fields: {', '.join(missing)}.",
+        )
 
     try:
         existing_user = db.query(User).filter(User.mobile == user.mobile).first()
@@ -283,7 +315,7 @@ def register(user: RegisterUser, db: Session = Depends(get_db)):
         soil_type=user.soil_type,
         land_area=user.land_area,
         primary_crops=user.primary_crops,
-        role=user.role
+        role=role
     )
 
     try:

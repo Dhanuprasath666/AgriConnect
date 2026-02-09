@@ -261,7 +261,7 @@ const ConsumerCategory = () => {
           className="cd-brand"
           onClick={() => navigate("/")}
         >
-          AgriConnect
+          <span className="ac-brand-text">AC</span>
         </button>
 
         <div className="cd-topbar-actions">

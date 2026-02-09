@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../style.css";
+import { setCurrentFarmerId, setCurrentFarmerName, setCurrentFarmerDetails } from "../lib/currentFarmer";
 
 const FarmerRegister = () => {
   const navigate = useNavigate();
@@ -120,10 +121,30 @@ const FarmerRegister = () => {
       }
 
       setSuccess("Farmer registration completed successfully.");
+
+      const farmerId = form.phone.replace(/\D/g, "") || "demo-farmer";
+      setCurrentFarmerId(farmerId);
+      setCurrentFarmerName(form.name.trim() || "Farmer");
+
+      // Store all farmer details
+      setCurrentFarmerDetails({
+        id: farmerId,
+        name: form.name.trim(),
+        age: Number(form.age),
+        phone: form.phone.replace(/\D/g, ""),
+        alternatePhone: form.alternatePhone.replace(/\D/g, ""),
+        aadharNumber: form.aadharNumber.replace(/\D/g, ""),
+        village: form.village.trim(),
+        district: form.district.trim(),
+        state: form.state.trim(),
+        pincode: form.pincode.replace(/\D/g, ""),
+        soilType: form.soilType.trim(),
+        landArea: form.landArea.trim(),
+        primaryCrops: form.primaryCrops.trim(),
+      });
+
       setTimeout(() => {
-        navigate("/farmer/login", {
-          state: { farmerLoginAccess: "top-nav" },
-        });
+        navigate("/farmer/dashboard");
       }, 700);
     } catch (requestError) {
       setError("Unable to connect to server. Please try again.");
@@ -136,7 +157,7 @@ const FarmerRegister = () => {
     <div className="rg-page">
       <header className="rg-topbar">
         <button className="rg-brand" onClick={() => navigate("/")}>
-          AgriConnect
+          <span className="ac-brand-text">AC</span>
         </button>
         <button className="rg-top-btn" onClick={() => navigate("/register")}>
           Back

@@ -107,33 +107,19 @@ const ConsumerRegister = () => {
         return;
       }
 
-      setSuccess("Consumer registration completed successfully. Signing you in...");
+      setSuccess("Consumer registration completed successfully.");
 
-      const loginResponse = await fetch("http://127.0.0.1:8000/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mobile: mobileDigits,
-          password: form.password,
-        }),
+      persistConsumerSession({
+        name: trimmedName,
+        mobile: mobileDigits,
+        alternatePhone: alternateDigits,
+        email: emailValue,
+        village: villageValue,
+        district: districtValue,
+        state: stateValue,
       });
 
-      const loginData = await loginResponse.json().catch(() => ({}));
-      if (loginResponse.ok && loginData.role === "consumer") {
-        persistConsumerSession({
-          name: trimmedName,
-          mobile: mobileDigits,
-        });
-        navigate("/consumer/market");
-        return;
-      }
-
-      navigate("/consumer/login", {
-        state: {
-          prefillMobile: mobileDigits,
-          prefillPassword: form.password,
-        },
-      });
+      navigate("/consumer/profile");
     } catch (requestError) {
       setError("Unable to connect to server. Please try again.");
     } finally {
@@ -145,7 +131,7 @@ const ConsumerRegister = () => {
     <div className="rg-page">
       <header className="rg-topbar">
         <button className="rg-brand" onClick={() => navigate("/")}>
-          AgriConnect
+          <span className="ac-brand-text">AC</span>
         </button>
         <button className="rg-top-btn" onClick={() => navigate("/register")}>
           Back
