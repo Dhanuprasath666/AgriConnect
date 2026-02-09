@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import "../style.css";
-import { setCurrentFarmerId, setCurrentFarmerName } from "../lib/currentFarmer";
+import {
+  setCurrentFarmerAccessToken,
+  setCurrentFarmerId,
+  setCurrentFarmerName,
+} from "../lib/currentFarmer";
 
 const FarmerLogin = () => {
   const navigate = useNavigate();
@@ -54,12 +58,24 @@ const FarmerLogin = () => {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
-      if (res.ok && data.role === "farmer") {
+      if (!res.ok) {
+        const detail =
+          typeof data?.detail === "string"
+            ? data.detail
+            : "Invalid mobile number or password.";
+        setError(detail);
+        return;
+      }
+
+      if (data.role === "farmer") {
         const farmerId = mobile.replace(/\\D/g, "") || "demo-farmer";
         setCurrentFarmerId(farmerId);
         setCurrentFarmerName(data?.name || "Farmer");
+        setCurrentFarmerAccessToken(
+          typeof data?.access_token === "string" ? data.access_token : ""
+        );
         navigate("/farmer/dashboard");
         return;
       }

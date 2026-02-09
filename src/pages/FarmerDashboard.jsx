@@ -16,7 +16,12 @@ import {
 import "../style.css";
 import farmBg from "../assets/farm-bg.jpg";
 import { db } from "../firebase";
-import { getCurrentFarmerId, getCurrentFarmerName, getCurrentFarmerDetails } from "../lib/currentFarmer";
+import {
+  clearCurrentFarmerSession,
+  getCurrentFarmerAccessToken,
+  getCurrentFarmerId,
+  getCurrentFarmerName,
+} from "../lib/currentFarmer";
 import { fetchOpenMeteoWeather } from "../lib/weather";
 import { generateRuleBasedAlerts } from "../lib/alerts";
 import { simulateEarningsFromListings } from "../lib/earnings";
@@ -53,17 +58,22 @@ const FarmerDashboard = () => {
   const farmerId = useMemo(() => getCurrentFarmerId(), []);
   const normalizedFarmerId = useMemo(() => normalizeText(farmerId), [farmerId]);
   const farmerName = useMemo(() => getCurrentFarmerName(), []);
-  const normalizedFarmerName = useMemo(
-    () => normalizeText(farmerName),
-    [farmerName]
-  );
-  const farmerDetails = useMemo(() => getCurrentFarmerDetails(), []);
+  const accessToken = useMemo(() => getCurrentFarmerAccessToken(), []);
 
   const [profile, setProfile] = useState(null);
   const [weather, setWeather] = useState(null);
   const [weatherError, setWeatherError] = useState("");
+  const [backendWeatherFailed, setBackendWeatherFailed] = useState(false);
   const [resolvedLocation, setResolvedLocation] = useState(null);
   const [resolvedLocationLoading, setResolvedLocationLoading] = useState(false);
+  const [backendLocationLabel, setBackendLocationLabel] = useState("");
+  const [backendLatLng, setBackendLatLng] = useState(null);
+
+  const hasManualCoords =
+    typeof profile?.location?.lat === "number" &&
+    Number.isFinite(profile.location.lat) &&
+    typeof profile?.location?.lng === "number" &&
+    Number.isFinite(profile.location.lng);
 
   const [soilMoistureInput, setSoilMoistureInput] = useState("");
   const [products, setProducts] = useState([]);
@@ -115,14 +125,8 @@ const FarmerDashboard = () => {
         await setDoc(ref, {
           farmerId,
           name: farmerName,
-          village: farmerDetails?.village || "",
-          district: farmerDetails?.district || "",
-          state: farmerDetails?.state || "",
-          pincode: farmerDetails?.pincode || "",
-          soilType: farmerDetails?.soilType || "",
-          landArea: farmerDetails?.landArea || "",
-          locationText,
-          location: { lat: 13.0827, lng: 80.2707 },
+          locationText: "Village, District",
+          location: null,
           crop: {
             name: cropName,
             sowingDate: sowing.toISOString(),
@@ -259,7 +263,62 @@ const FarmerDashboard = () => {
   }, [farmerId]);
 
   useEffect(() => {
-    if (!profile?.location?.lat || !profile?.location?.lng) return;
+    if (!accessToken) return;
+    let cancelled = false;
+
+    async function run() {
+      try {
+        setWeatherError("");
+        setBackendWeatherFailed(false);
+
+        const res = await fetch("http://127.0.0.1:8000/weather/me", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const detail =
+            typeof data?.detail === "string"
+              ? data.detail
+              : `Unable to load weather (${res.status}).`;
+          throw new Error(detail);
+        }
+
+        if (cancelled) return;
+
+        setWeather(data?.weather || null);
+        setBackendLocationLabel(
+          typeof data?.location?.label === "string" ? data.location.label : ""
+        );
+        if (
+          typeof data?.location?.lat === "number" &&
+          typeof data?.location?.lng === "number"
+        ) {
+          setBackendLatLng({ lat: data.location.lat, lng: data.location.lng });
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setBackendWeatherFailed(true);
+          setWeatherError(e?.message || "Unable to load weather.");
+        }
+      }
+    }
+
+    run();
+    const intervalId = setInterval(run, 5 * 60 * 1000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [accessToken]);
+
+  useEffect(() => {
+    const shouldUseManualWeather =
+      hasManualCoords && (!accessToken || backendWeatherFailed);
+    if (!shouldUseManualWeather) return;
     let cancelled = false;
 
     async function run() {
@@ -282,10 +341,18 @@ const FarmerDashboard = () => {
       cancelled = true;
       clearInterval(intervalId);
     };
-  }, [profile?.location?.lat, profile?.location?.lng]);
+  }, [
+    accessToken,
+    backendWeatherFailed,
+    hasManualCoords,
+    profile?.location?.lat,
+    profile?.location?.lng,
+  ]);
 
   useEffect(() => {
-    if (!profile?.location?.lat || !profile?.location?.lng) return;
+    const shouldUseManualLocation =
+      hasManualCoords && (!accessToken || backendWeatherFailed);
+    if (!shouldUseManualLocation) return;
     const controller = new AbortController();
     let mounted = true;
 
@@ -311,7 +378,13 @@ const FarmerDashboard = () => {
       mounted = false;
       controller.abort();
     };
-  }, [profile?.location?.lat, profile?.location?.lng]);
+  }, [
+    accessToken,
+    backendWeatherFailed,
+    hasManualCoords,
+    profile?.location?.lat,
+    profile?.location?.lng,
+  ]);
 
   useEffect(() => {
     const computed = simulateEarningsFromListings({
@@ -573,13 +646,19 @@ const FarmerDashboard = () => {
       : 30;
 
   const displayLocationLabel = useMemo(() => {
+    if (backendLocationLabel) return backendLocationLabel;
     const manualCity = (profile?.locationText || "").trim();
     const resolvedCity = (resolvedLocation?.city || "").trim();
     const city = resolvedCity || manualCity;
     const country = (resolvedLocation?.country || "India").trim() || "India";
     if (city) return `${city}, ${country}`;
     return country;
-  }, [profile?.locationText, resolvedLocation?.city, resolvedLocation?.country]);
+  }, [
+    backendLocationLabel,
+    profile?.locationText,
+    resolvedLocation?.city,
+    resolvedLocation?.country,
+  ]);
 
   return (
     <div className="fd-layout fd fdv3">
@@ -646,7 +725,7 @@ const FarmerDashboard = () => {
                   <button
                     onClick={() => {
                       setShowProfile(false);
-                      window.localStorage.removeItem("ac_farmer_id");
+                      clearCurrentFarmerSession();
                       navigate("/", { replace: true });
                     }}
                     className="logout"
@@ -736,13 +815,21 @@ const FarmerDashboard = () => {
                     ? "Resolving location..."
                     : displayLocationLabel || "India"}
                 </strong>
-                {profile?.location?.lat && profile?.location?.lng && (
+                {!backendWeatherFailed &&
+                backendLatLng?.lat != null &&
+                backendLatLng?.lng != null ? (
+                  <span>
+                    {" "}
+                    ({Number(backendLatLng.lat).toFixed(4)},{" "}
+                    {Number(backendLatLng.lng).toFixed(4)})
+                  </span>
+                ) : hasManualCoords ? (
                   <span>
                     {" "}
                     ({profile.location.lat.toFixed(4)},{" "}
                     {profile.location.lng.toFixed(4)})
                   </span>
-                )}
+                ) : null}
               </div>
             </div>
           </div>

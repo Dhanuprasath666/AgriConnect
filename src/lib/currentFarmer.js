@@ -26,23 +26,28 @@ export function setCurrentFarmerName(name) {
   window.localStorage.setItem("ac_farmer_name", name);
 }
 
-export function getCurrentFarmerDetails() {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return null;
-  }
-  const details = window.localStorage.getItem("ac_farmer_details");
-  return details ? JSON.parse(details) : null;
+export function getCurrentFarmerAccessToken() {
+  return (
+    (typeof window !== "undefined" &&
+      window.localStorage &&
+      window.localStorage.getItem("ac_farmer_access_token")) ||
+    ""
+  );
 }
 
-export function setCurrentFarmerDetails(details) {
+export function setCurrentFarmerAccessToken(token) {
   if (typeof window === "undefined" || !window.localStorage) return;
-  window.localStorage.setItem("ac_farmer_details", JSON.stringify(details));
+  if (!token) {
+    window.localStorage.removeItem("ac_farmer_access_token");
+    return;
+  }
+  window.localStorage.setItem("ac_farmer_access_token", token);
 }
 
-export function clearCurrentFarmerDetails() {
+export function clearCurrentFarmerSession() {
   if (typeof window === "undefined" || !window.localStorage) return;
   window.localStorage.removeItem("ac_farmer_id");
   window.localStorage.removeItem("ac_farmer_name");
-  window.localStorage.removeItem("ac_farmer_details");
+  window.localStorage.removeItem("ac_farmer_access_token");
 }
 
