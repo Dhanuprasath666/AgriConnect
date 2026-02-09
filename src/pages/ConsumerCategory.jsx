@@ -200,7 +200,12 @@ const ConsumerCategory = () => {
       farm: item.farmerName,
       price: `INR ${item.pricePerKg} / ${item.unit}`,
       stock: `${item.quantityKg} ${item.unit} available`,
-      urgent: item.quantityKg < 10,
+      urgent: Boolean(item.isUrgentDeal) &&
+        (!item.dealExpiryTime ||
+          (item.dealExpiryTime?.toDate?.() || new Date(item.dealExpiryTime)).getTime() >
+            Date.now()),
+      discountPercent: item.discountPercent ?? null,
+      dealExpiryTime: item.dealExpiryTime ?? null,
       __source: "firestore",
     })),
   ];
@@ -307,7 +312,7 @@ const ConsumerCategory = () => {
 
                   {item.urgent && (
                     <span className="cc-badge">
-                      Ending soon
+                      Urgent deal
                     </span>
                   )}
                 </div>
@@ -315,10 +320,21 @@ const ConsumerCategory = () => {
                 <p className="cc-farm">{item.farm}</p>
                 <p className="cc-price">
                   {item.price}
+                  {typeof item.discountPercent === "number" && item.discountPercent > 0 && (
+                    <span className="muted" style={{ marginLeft: 8 }}>
+                      ({Math.round(item.discountPercent)}% off)
+                    </span>
+                  )}
                 </p>
                 <p className="cc-stock">
                   {item.stock}
                 </p>
+                {item.urgent && item.dealExpiryTime && (
+                  <p className="muted" style={{ margin: 0 }}>
+                    Expires:{" "}
+                    {new Date(item.dealExpiryTime?.toDate?.() || item.dealExpiryTime).toLocaleString()}
+                  </p>
+                )}
 
                 <button
                   className="cd-btn cd-btn-primary cd-btn-small"
