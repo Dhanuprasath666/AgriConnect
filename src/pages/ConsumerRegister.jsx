@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../style.css";
+import { persistConsumerSession } from "../utils/consumerSession";
 
 const ConsumerRegister = () => {
   const navigate = useNavigate();
@@ -119,7 +120,11 @@ const ConsumerRegister = () => {
 
       const loginData = await loginResponse.json().catch(() => ({}));
       if (loginResponse.ok && loginData.role === "consumer") {
-        navigate("/consumer");
+        persistConsumerSession({
+          name: trimmedName,
+          mobile: mobileDigits,
+        });
+        navigate("/consumer/market");
         return;
       }
 

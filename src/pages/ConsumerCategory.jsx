@@ -7,6 +7,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "../firebase"; // adjust path if needed
+import { isConsumerLoggedIn, getConsumerSession, clearConsumerSession } from "../utils/consumerSession";
 import "../style.css";
 
 /* --------------------------------------------------
@@ -149,6 +150,8 @@ const categoryCatalog = {
 const ConsumerCategory = () => {
   const { category } = useParams();
   const navigate = useNavigate();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const session = getConsumerSession();
 
   const selectedKey = (category || "").toLowerCase();
   const selectedCategory = categoryCatalog[selectedKey];
@@ -229,6 +232,12 @@ const ConsumerCategory = () => {
     navigate(`/consumer/${pool[randomIndex]}`);
   };
 
+  const handleLogout = () => {
+    clearConsumerSession();
+    setShowProfileMenu(false);
+    navigate("/consumer/login");
+  };
+
   /* -------------------------------
      INVALID CATEGORY
   -------------------------------- */
@@ -255,12 +264,49 @@ const ConsumerCategory = () => {
           AgriConnect
         </button>
 
-        <button
-          className="cd-login-btn"
-          onClick={() => navigate("/consumer")}
-        >
-          All Categories
-        </button>
+        <div className="cd-topbar-actions">
+          <button
+            className="cd-login-btn"
+            onClick={() => navigate("/consumer")}
+          >
+            All Categories
+          </button>
+
+          {isConsumerLoggedIn() ? (
+            <div className="cd-profile">
+              <div
+                className="cd-avatar"
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+              >
+                {session?.name ? session.name.charAt(0).toUpperCase() : "C"}
+              </div>
+
+              {showProfileMenu && (
+                <div className="cd-profile-menu">
+                  <p><strong>{session?.name || "Consumer"}</strong></p>
+                  <p>{session?.email || "email@example.com"}</p>
+                  <button onClick={() => navigate("/")}>🏠 Home</button>
+                  <button onClick={() => navigate("/consumer/market")}>
+                    🛒 Marketplace
+                  </button>
+                  <button onClick={() => navigate("/consumer/profile")}>
+                    👤 My Profile
+                  </button>
+                  <button className="logout" onClick={handleLogout}>
+                    🚪 Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              className="cd-login-btn"
+              onClick={() => navigate("/consumer/login")}
+            >
+              Consumer Login
+            </button>
+          )}
+        </div>
       </header>
 
       <main className="cd-main">
