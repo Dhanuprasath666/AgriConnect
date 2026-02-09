@@ -41,13 +41,22 @@ function formatTimeLeft(expiry) {
   return `${h}h ${m}m left`;
 }
 
+function normalizeText(value) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
 const FarmerDashboard = () => {
   const navigate = useNavigate();
   const [showProfile, setShowProfile] = useState(false);
   const [activeSection, setActiveSection] = useState("overview");
 
   const farmerId = useMemo(() => getCurrentFarmerId(), []);
+  const normalizedFarmerId = useMemo(() => normalizeText(farmerId), [farmerId]);
   const farmerName = useMemo(() => getCurrentFarmerName(), []);
+  const normalizedFarmerName = useMemo(
+    () => normalizeText(farmerName),
+    [farmerName]
+  );
   const farmerDetails = useMemo(() => getCurrentFarmerDetails(), []);
 
   const [profile, setProfile] = useState(null);
@@ -152,19 +161,86 @@ const FarmerDashboard = () => {
   }, [farmerId, farmerName, farmerDetails]);
 
   useEffect(() => {
-    const q = query(
-      collection(db, "marketItems"),
-      where("farmerId", "==", farmerId),
-      orderBy("createdAt", "desc")
+    const knownOwnerIds = [
+      normalizedFarmerId,
+      normalizeText(profile?.id),
+      normalizeText(profile?.farmerId),
+    ].filter(Boolean);
+    const localProductIds = new Set();
+
+    if (typeof window !== "undefined" && window.localStorage) {
+      knownOwnerIds.forEach((ownerId) => {
+        const key = `ac_farmer_product_ids_${ownerId}`;
+        const raw = window.localStorage.getItem(key);
+        if (!raw) return;
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((id) => {
+              const normalizedId = String(id || "").trim();
+              if (normalizedId) localProductIds.add(normalizedId);
+            });
+          }
+        } catch {
+          // Ignore malformed local cache data
+        }
+      });
+    }
+
+    if (knownOwnerIds.length === 0 && !normalizedFarmerName) {
+      setProducts([]);
+      return undefined;
+    }
+
+    const q = query(collection(db, "marketItems"));
+    const unsub = onSnapshot(
+      q,
+      (snapshot) => {
+        const data = snapshot.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .filter((item) => {
+            const itemOwnerIds = [
+              normalizeText(item?.farmerId),
+              normalizeText(item?.ownerFarmerId),
+              normalizeText(item?.sellerId),
+              normalizeText(item?.ownerId),
+              normalizeText(item?.createdBy),
+            ].filter(Boolean);
+
+            const matchedById =
+              itemOwnerIds.length > 0 &&
+              itemOwnerIds.some((id) => knownOwnerIds.includes(id));
+
+            if (matchedById) return true;
+
+            const itemFarmerName = normalizeText(item?.farmerName);
+            const matchedByName = Boolean(
+              normalizedFarmerName &&
+                itemFarmerName &&
+                itemFarmerName === normalizedFarmerName
+            );
+            if (matchedByName) return true;
+
+            return localProductIds.has(String(item?.id || "").trim());
+          })
+          .sort((a, b) => {
+            const aTime =
+              a?.createdAt?.toDate?.()?.getTime?.() ||
+              new Date(a?.createdAt || 0).getTime() ||
+              0;
+            const bTime =
+              b?.createdAt?.toDate?.()?.getTime?.() ||
+              new Date(b?.createdAt || 0).getTime() ||
+              0;
+            return bTime - aTime;
+          });
+        setProducts(data);
+      },
+      () => setProducts([])
     );
 
-    const unsub = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setProducts(data);
-    });
-
     return () => unsub();
-  }, [farmerId]);
+  }, [normalizedFarmerId, normalizedFarmerName, profile?.id, profile?.farmerId]);
 
   useEffect(() => {
     const q = query(
@@ -1051,6 +1127,7 @@ const FarmerDashboard = () => {
                 <span className="fd-card__icon">☐</span>
                 <h3>Your Products</h3>
               </div>
+              <span className="fdv3-productCount">{products.length} listed</span>
               <button
                 className="fdv3-btn fdv3-btn--ghost"
                 onClick={() => navigate("/farmer/add-product")}
@@ -1060,7 +1137,9 @@ const FarmerDashboard = () => {
             </div>
             <div className="fd-card__body">
               {products.length === 0 ? (
-                <p className="fd-muted">No products added yet.</p>
+                <p className="fdv3-emptyProducts">
+                  No products added yet. Add your first product to show it here.
+                </p>
               ) : (
                 <div className="fdv3-productList">
                   {products.map((p) => {

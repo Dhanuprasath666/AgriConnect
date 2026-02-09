@@ -20,8 +20,8 @@ const AddProduct = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const farmerId = getCurrentFarmerId();
-    const farmerName = getCurrentFarmerName();
+    const farmerId = String(getCurrentFarmerId() || "").trim() || "demo-farmer";
+    const farmerName = String(getCurrentFarmerName() || "").trim() || "Demo Farmer";
 
     const discount = discountPercent === "" ? null : Number(discountPercent);
     const expiryHours = dealExpiryHours === "" ? null : Number(dealExpiryHours);
@@ -38,6 +38,10 @@ const AddProduct = () => {
       category,
       farmerId,
       farmerName,
+      ownerFarmerId: farmerId,
+      sellerId: farmerId,
+      ownerId: farmerId,
+      createdBy: farmerId,
       unit: "kg",
       isUrgentDeal: Boolean(isUrgentDeal),
       discountPercent:
@@ -45,11 +49,33 @@ const AddProduct = () => {
       dealExpiryTime: expiry,
     };
 
-    await addDoc(collection(db, "marketItems"), {
+    const createdDoc = await addDoc(collection(db, "marketItems"), {
       ...newItem,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
+
+    if (typeof window !== "undefined" && window.localStorage) {
+      const ownerKeys = Array.from(
+        new Set([farmerId, farmerId.toLowerCase()].filter(Boolean))
+      );
+
+      ownerKeys.forEach((ownerKey) => {
+        const key = `ac_farmer_product_ids_${ownerKey}`;
+        const existing = window.localStorage.getItem(key);
+        let next = [];
+        if (existing) {
+          try {
+            const parsed = JSON.parse(existing);
+            next = Array.isArray(parsed) ? parsed : [];
+          } catch {
+            next = [];
+          }
+        }
+        if (!next.includes(createdDoc.id)) next.push(createdDoc.id);
+        window.localStorage.setItem(key, JSON.stringify(next));
+      });
+    }
 
     alert("ADDED SUCCESSFULLY");
     navigate("/farmer/dashboard");
@@ -68,17 +94,25 @@ const AddProduct = () => {
           required
         />
 
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          required
-        >
-          <option value="">Select Category</option>
-          <option value="Fruits">Fruits</option>
-          <option value="Vegetables">Vegetables</option>
-          <option value="Plant Saplings">Plant Saplings</option>
-          <option value="Plant Products">Plant Products</option>
-        </select>
+        <div className="add-field">
+          <label className="add-label" htmlFor="category-select">
+            Select Category
+          </label>
+          <div className="add-select-wrap">
+            <select
+              id="category-select"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              required
+            >
+              <option value="">Choose crop category</option>
+              <option value="Fruits">Fruits</option>
+              <option value="Vegetables">Vegetables</option>
+              <option value="Plant Saplings">Plant Saplings</option>
+              <option value="Plant Products">Plant Products</option>
+            </select>
+          </div>
+        </div>
 
         <input
           type="number"
@@ -104,14 +138,20 @@ const AddProduct = () => {
           required
         />
 
-        <div style={{ display: "grid", gap: 10 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="add-urgent-section">
+          <label className="add-urgent-toggle">
             <input
               type="checkbox"
               checked={isUrgentDeal}
               onChange={(e) => setIsUrgentDeal(e.target.checked)}
             />
-            Mark as Urgent Deal / Flash Sale
+            <span className="add-urgent-copy">
+              <span className="add-urgent-title">Mark as Urgent Deal</span>
+              <span className="add-urgent-subtitle">
+                Enable flash sale with optional discount and expiry
+              </span>
+            </span>
+            <span className="add-urgent-chip">Flash Sale</span>
           </label>
 
           {isUrgentDeal && (
