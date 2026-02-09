@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../style.css";
+import { persistConsumerSession } from "../utils/consumerSession";
 
 const ConsumerLogin = () => {
   const navigate = useNavigate();
@@ -83,7 +84,23 @@ const ConsumerLogin = () => {
         return;
       }
 
-      navigate("/consumer");
+      persistConsumerSession({
+        name: typeof data.name === "string" ? data.name : "",
+        mobile: mobileDigits,
+      });
+
+      const redirectTo = location.state?.redirectTo;
+      const buyNowItem = location.state?.buyNowItem;
+
+      if (typeof redirectTo === "string" && redirectTo.trim()) {
+        navigate(redirectTo, {
+          replace: true,
+          state: buyNowItem ? { item: buyNowItem } : undefined,
+        });
+        return;
+      }
+
+      navigate("/consumer/market");
     } catch (networkError) {
       setError("Unable to connect to server. Please try again.");
     } finally {
@@ -112,8 +129,11 @@ const ConsumerLogin = () => {
           >
             Create account
           </button>
-          <button className="cl-back-btn" onClick={() => navigate("/consumer")}>
-            Back to dashboard
+          <button
+            className="cl-back-btn"
+            onClick={() => navigate("/consumer/market")}
+          >
+            Back to marketplace
           </button>
         </div>
       </header>

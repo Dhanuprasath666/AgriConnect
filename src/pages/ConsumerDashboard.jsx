@@ -1,9 +1,13 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { isConsumerLoggedIn, getConsumerSession, clearConsumerSession } from "../utils/consumerSession";
 import "../style.css";
+import { useState } from "react";
 
 const ConsumerDashboard = () => {
   const navigate = useNavigate();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const session = getConsumerSession();
 
   const categories = [
     {
@@ -47,18 +51,62 @@ const ConsumerDashboard = () => {
     navigate(categories[randomIndex].path);
   };
 
+  const handleBuyNow = () => {
+    if (isConsumerLoggedIn()) {
+      navigate("/consumer/buy-now");
+    } else {
+      navigate("/consumer/login");
+    }
+  };
+
+  const handleLogout = () => {
+    clearConsumerSession();
+    setShowProfileMenu(false);
+    navigate("/consumer/login");
+  };
+
   return (
     <div className="cd-page">
       <header className="cd-topbar">
         <button className="cd-brand" onClick={() => navigate("/")}>
           AgriConnect
         </button>
-        <button
-          className="cd-login-btn"
-          onClick={() => navigate("/consumer/login")}
-        >
-          Consumer Login
-        </button>
+        <div className="cd-topbar-actions">
+          {isConsumerLoggedIn() ? (
+            <div className="cd-profile">
+              <div
+                className="cd-avatar"
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+              >
+                {session?.name ? session.name.charAt(0).toUpperCase() : "C"}
+              </div>
+
+              {showProfileMenu && (
+                <div className="cd-profile-menu">
+                  <p><strong>{session?.name || "Consumer"}</strong></p>
+                  <p>{session?.email || "email@example.com"}</p>
+                  <button onClick={() => navigate("/")}>🏠 Home</button>
+                  <button onClick={() => navigate("/consumer/market")}>
+                    🛒 Marketplace
+                  </button>
+                  <button onClick={() => navigate("/consumer/profile")}>
+                    👤 My Profile
+                  </button>
+                  <button className="logout" onClick={handleLogout}>
+                    🚪 Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              className="cd-login-btn"
+              onClick={() => navigate("/consumer/login")}
+            >
+              Consumer Login
+            </button>
+          )}
+        </div>
       </header>
 
       <main className="cd-main">
@@ -80,9 +128,9 @@ const ConsumerDashboard = () => {
               </button>
               <button
                 className="cd-btn cd-btn-secondary"
-                onClick={() => navigate("/consumer/login")}
+                onClick={handleBuyNow}
               >
-                Track Orders
+                Buy Now
               </button>
             </div>
           </div>
@@ -146,7 +194,7 @@ const ConsumerDashboard = () => {
                 <p className="cd-deal-meta">{deal.eta}</p>
                 <button
                   className="cd-btn cd-btn-primary cd-btn-small"
-                  onClick={() => navigate("/consumer/login")}
+                  onClick={handleBuyNow}
                 >
                   Buy Now
                 </button>

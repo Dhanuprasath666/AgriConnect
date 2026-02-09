@@ -11,6 +11,8 @@ import ConsumerLogin from "./pages/Consumerlogin";
 import FarmerRegister from "./pages/FarmerRegister";
 import Register from "./pages/Register";
 import ConsumerRegister from "./pages/ConsumerRegister";
+import ConsumerBuyNow from "./pages/ConsumerBuyNow";
+import ConsumerProfile from "./pages/ConsumerProfile";
 
 function App() {
   return (
@@ -38,6 +40,8 @@ function App() {
         <Route path="/consumer" element={<ConsumerDashboard />} />
         <Route path="/farmer/add-product" element={<AddProduct />} />
         <Route path="/consumer/market" element={<ConsumerMarket />} />
+        <Route path="/consumer/buy-now" element={<ConsumerBuyNow />} />
+        <Route path="/consumer/profile" element={<ConsumerProfile />} />
         <Route path="/consumer/:category" element={<ConsumerCategory />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
