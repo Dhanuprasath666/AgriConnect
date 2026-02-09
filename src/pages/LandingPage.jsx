@@ -1,7 +1,28 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../style.css";
 import farmBg from "../assets/farm-bg.jpg";
+import { collection, limit, onSnapshot, orderBy, query } from "firebase/firestore";
+import { db } from "../firebase";
+
+function isDealActive(item) {
+  if (!item?.isUrgentDeal) return false;
+  if (!item?.dealExpiryTime) return true;
+  const expiry = item.dealExpiryTime?.toDate?.() || new Date(item.dealExpiryTime);
+  return expiry.getTime() > Date.now();
+}
+
+function formatDealCountdown(item) {
+  if (!item?.dealExpiryTime) return null;
+  const expiry = item.dealExpiryTime?.toDate?.() || new Date(item.dealExpiryTime);
+  const ms = expiry.getTime() - Date.now();
+  if (!Number.isFinite(ms)) return null;
+  if (ms <= 0) return "Expired";
+  const totalMin = Math.floor(ms / (1000 * 60));
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return h <= 0 ? `${m}m left` : `${h}h ${m}m left`;
+}
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -12,29 +33,22 @@ const LandingPage = () => {
     });
   };
 
-  const urgentCrops = [
-    {
-      id: 1,
-      name: "Tomato",
-      discount: "50% OFF",
-      quantity: "10 units",
-      daysLeft: "2 days",
-    },
-    {
-      id: 2,
-      name: "Spinach",
-      discount: "25% OFF",
-      quantity: "6 units",
-      daysLeft: "1 day",
-    },
-    {
-      id: 3,
-      name: "Banana",
-      discount: "40% OFF",
-      quantity: "15 units",
-      daysLeft: "2 days",
-    },
-  ];
+  const [marketItems, setMarketItems] = useState([]);
+
+  useEffect(() => {
+    const q = query(collection(db, "marketItems"), orderBy("updatedAt", "desc"), limit(30));
+
+    const unsub = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setMarketItems(data);
+    });
+
+    return () => unsub();
+  }, []);
+
+  const urgentDeals = useMemo(() => {
+    return marketItems.filter(isDealActive).slice(0, 6);
+  }, [marketItems]);
 
   const features = [
     {
@@ -147,21 +161,30 @@ const LandingPage = () => {
           </div>
 
           <div className="lp-deals-grid">
-            {urgentCrops.map((crop) => (
-              <article className="lp-deal-card" key={crop.id}>
-                <h3>{crop.name}</h3>
-                <p className="lp-deal-discount">{crop.discount}</p>
-                <p className="lp-deal-meta">
-                  {crop.quantity} available / {crop.daysLeft} left
-                </p>
+            {urgentDeals.length === 0 ? (
+              <p className="muted">No urgent deals right now. Check back soon.</p>
+            ) : (
+              urgentDeals.map((deal) => (
+                <article className="lp-deal-card" key={deal.id}>
+                  <h3>{deal.productName || "Urgent deal"}</h3>
+                  <p className="lp-deal-discount">
+                    {typeof deal.discountPercent === "number"
+                      ? `${Math.round(deal.discountPercent)}% OFF`
+                      : "Limited-time deal"}
+                  </p>
+                  <p className="lp-deal-meta">
+                    {deal.quantityKg ?? "--"} {deal.unit || "kg"} available
+                    {formatDealCountdown(deal) ? ` / ${formatDealCountdown(deal)}` : ""}
+                  </p>
                 <button
                   className="lp-btn lp-btn-primary lp-btn-small"
                   onClick={() => navigate("/consumer/login")}
                 >
                   Buy Now
                 </button>
-              </article>
-            ))}
+                </article>
+              ))
+            )}
           </div>
         </section>
 

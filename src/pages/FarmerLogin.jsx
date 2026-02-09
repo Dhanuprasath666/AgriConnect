@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import "../style.css";
+import { setCurrentFarmerId, setCurrentFarmerName } from "../lib/currentFarmer";
 
 const FarmerLogin = () => {
   const navigate = useNavigate();
@@ -56,6 +57,9 @@ const FarmerLogin = () => {
       const data = await res.json();
 
       if (res.ok && data.role === "farmer") {
+        const farmerId = mobile.replace(/\\D/g, "") || "demo-farmer";
+        setCurrentFarmerId(farmerId);
+        setCurrentFarmerName(data?.name || "Farmer");
         navigate("/farmer/dashboard");
         return;
       }
