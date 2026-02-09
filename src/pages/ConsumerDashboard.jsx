@@ -69,7 +69,7 @@ const ConsumerDashboard = () => {
     <div className="cd-page">
       <header className="cd-topbar">
         <button className="cd-brand" onClick={() => navigate("/")}>
-          AgriConnect
+          <span className="ac-brand-text">AC</span>
         </button>
         <div className="cd-topbar-actions">
           {isConsumerLoggedIn() ? (

@@ -120,7 +120,7 @@ const ConsumerLogin = () => {
 
       <header className="cl-topbar">
         <button className="cl-brand" onClick={() => navigate("/")}>
-          AgriConnect
+          <span className="ac-brand-text">AC</span>
         </button>
         <div className="cl-top-actions">
           <button
@@ -212,7 +212,11 @@ const ConsumerLogin = () => {
             {error && <p className="cl-error">{error}</p>}
 
             <div className="cl-meta-row">
-              <p className="cl-support-text">Need help? Contact AgriConnect support.</p>
+              <p className="cl-support-text">
+                Need help? Contact{" "}
+                <span className="ac-brand-text ac-brand-text--inline">AC</span>{" "}
+                support.
+              </p>
               <button className="cl-forgot-btn" onClick={() => navigate("/consumer/register")}>
                 New user? Register
               </button>
