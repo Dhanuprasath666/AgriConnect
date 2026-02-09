@@ -16,7 +16,7 @@ import {
 import "../style.css";
 import farmBg from "../assets/farm-bg.jpg";
 import { db } from "../firebase";
-import { getCurrentFarmerId, getCurrentFarmerName } from "../lib/currentFarmer";
+import { getCurrentFarmerId, getCurrentFarmerName, getCurrentFarmerDetails } from "../lib/currentFarmer";
 import { fetchOpenMeteoWeather } from "../lib/weather";
 import { generateRuleBasedAlerts } from "../lib/alerts";
 import { simulateEarningsFromListings } from "../lib/earnings";
@@ -48,6 +48,7 @@ const FarmerDashboard = () => {
 
   const farmerId = useMemo(() => getCurrentFarmerId(), []);
   const farmerName = useMemo(() => getCurrentFarmerName(), []);
+  const farmerDetails = useMemo(() => getCurrentFarmerDetails(), []);
 
   const [profile, setProfile] = useState(null);
   const [weather, setWeather] = useState(null);
@@ -96,13 +97,25 @@ const FarmerDashboard = () => {
         const now = new Date();
         const sowing = new Date(now.getTime() - 18 * 24 * 60 * 60 * 1000);
 
+        const locationText = farmerDetails
+          ? `${farmerDetails.village || "Village"}, ${farmerDetails.district || "District"}`
+          : "Village, District";
+
+        const cropName = farmerDetails?.primaryCrops || "Tomato";
+
         await setDoc(ref, {
           farmerId,
           name: farmerName,
-          locationText: "Village, District",
+          village: farmerDetails?.village || "",
+          district: farmerDetails?.district || "",
+          state: farmerDetails?.state || "",
+          pincode: farmerDetails?.pincode || "",
+          soilType: farmerDetails?.soilType || "",
+          landArea: farmerDetails?.landArea || "",
+          locationText,
           location: { lat: 13.0827, lng: 80.2707 },
           crop: {
-            name: "Tomato",
+            name: cropName,
             sowingDate: sowing.toISOString(),
             expectedHarvestDays: 60,
           },
@@ -136,7 +149,7 @@ const FarmerDashboard = () => {
     });
 
     return () => unsub();
-  }, [farmerId, farmerName]);
+  }, [farmerId, farmerName, farmerDetails]);
 
   useEffect(() => {
     const q = query(

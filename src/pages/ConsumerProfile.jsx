@@ -124,7 +124,7 @@ const ConsumerProfile = () => {
           <div className="profile-info">
             <h2>{session.name || "Consumer"}</h2>
             <p>{session.email || "email@example.com"}</p>
-            <p>{session.phone || "+91 XXXX XXXX"}</p>
+            <p>{session.mobile || "+91 XXXX XXXX"}</p>
           </div>
           <button
             className="profile-edit-btn"
