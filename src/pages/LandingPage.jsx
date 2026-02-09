@@ -4,6 +4,9 @@ import "../style.css";
 import farmBg from "../assets/farm-bg.jpg";
 import { collection, limit, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "../firebase";
+import { setPostLoginRedirect, storeBuyNowItem } from "../utils/buyNowFlow";
+import { isConsumerAuthenticated } from "../utils/auth";
+import UrgentDealsScroller from "../components/UrgentDealsScroller";
 
 function isDealActive(item) {
   if (!item?.isUrgentDeal) return false;
@@ -28,7 +31,7 @@ const LandingPage = () => {
   const navigate = useNavigate();
 
   const openFarmerLoginFromTop = () => {
-    navigate("/farmer/login", {
+    navigate("/login/farmer", {
       state: { farmerLoginAccess: "top-nav" },
     });
   };
@@ -49,6 +52,49 @@ const LandingPage = () => {
   const urgentDeals = useMemo(() => {
     return marketItems.filter(isDealActive).slice(0, 6);
   }, [marketItems]);
+
+  const scrollerDeals = useMemo(
+    () =>
+      urgentDeals.map((deal) => ({
+        id: deal.id,
+        title: deal.productName || "Urgent deal",
+        badge:
+          typeof deal.discountPercent === "number"
+            ? `${Math.round(deal.discountPercent)}% OFF`
+            : "Limited-time deal",
+        meta: `${deal.quantityKg ?? "--"} ${deal.unit || "kg"} available${
+          formatDealCountdown(deal) ? ` / ${formatDealCountdown(deal)}` : ""
+        }`,
+        raw: deal,
+      })),
+    [urgentDeals]
+  );
+
+  const handleDealClick = (deal) => {
+    const payload = {
+      id: deal.id,
+      productName: deal.productName || deal.name,
+      pricePerKg: Number(deal.pricePerKg ?? deal.price) || 0,
+      quantityKg: Number(deal.quantityKg ?? deal.quantity) || 0,
+      unit: deal.unit || "kg",
+      farmerId: deal.farmerId || deal.ownerFarmerId,
+      farmerName: deal.farmerName,
+      location: deal.location,
+      category: deal.category,
+    };
+
+    storeBuyNowItem(payload);
+
+    if (!isConsumerAuthenticated()) {
+      setPostLoginRedirect("/consumer/buy-now", payload);
+      navigate("/login/consumer", {
+        state: { redirectTo: "/consumer/buy-now", buyNowItem: payload },
+      });
+      return;
+    }
+
+    navigate("/consumer/buy-now", { state: { item: payload } });
+  };
 
   const features = [
     {
@@ -159,32 +205,14 @@ const LandingPage = () => {
             <h2>Urgent deals currently available</h2>
           </div>
 
-          <div className="lp-deals-grid">
-            {urgentDeals.length === 0 ? (
-              <p className="muted">No urgent deals right now. Check back soon.</p>
-            ) : (
-              urgentDeals.map((deal) => (
-                <article className="lp-deal-card" key={deal.id}>
-                  <h3>{deal.productName || "Urgent deal"}</h3>
-                  <p className="lp-deal-discount">
-                    {typeof deal.discountPercent === "number"
-                      ? `${Math.round(deal.discountPercent)}% OFF`
-                      : "Limited-time deal"}
-                  </p>
-                  <p className="lp-deal-meta">
-                    {deal.quantityKg ?? "--"} {deal.unit || "kg"} available
-                    {formatDealCountdown(deal) ? ` / ${formatDealCountdown(deal)}` : ""}
-                  </p>
-                <button
-                  className="lp-btn lp-btn-primary lp-btn-small"
-                  onClick={() => navigate("/consumer/login")}
-                >
-                  Buy Now
-                </button>
-                </article>
-              ))
-            )}
-          </div>
+          <UrgentDealsScroller
+            deals={scrollerDeals}
+            emptyText="No urgent deals right now. Check back soon."
+            cardClassName="lp-deal-card lp-deal-card--scroll"
+            showButton
+            buttonLabel="Buy Now"
+            onDealClick={(deal) => handleDealClick(deal.raw)}
+          />
         </section>
 
         <section className="lp-cta">

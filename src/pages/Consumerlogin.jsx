@@ -2,6 +2,14 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../style.css";
 import { persistConsumerSession } from "../utils/consumerSession";
+import { clearCurrentFarmerSession } from "../lib/currentFarmer";
+import { isConsumerAuthenticated } from "../utils/auth";
+import {
+  clearPostLoginRedirect,
+  clearStoredBuyNowItem,
+  getPostLoginRedirect,
+  getStoredBuyNowItem,
+} from "../utils/buyNowFlow";
 
 const ConsumerLogin = () => {
   const navigate = useNavigate();
@@ -41,6 +49,12 @@ const ConsumerLogin = () => {
       setPassword(prefillPassword);
     }
   }, [location.state]);
+
+  useEffect(() => {
+    if (isConsumerAuthenticated()) {
+      navigate("/consumer/profile", { replace: true });
+    }
+  }, [navigate]);
 
   const handleLogin = async () => {
     const mobileDigits = mobile.trim().replace(/\D/g, "");
@@ -84,15 +98,23 @@ const ConsumerLogin = () => {
         return;
       }
 
+      // Ensure consumer login does not keep any farmer session.
+      clearCurrentFarmerSession();
       persistConsumerSession({
         name: typeof data.name === "string" ? data.name : "",
         mobile: mobileDigits,
+        consumerId: mobileDigits,
       });
 
-      const redirectTo = location.state?.redirectTo;
-      const buyNowItem = location.state?.buyNowItem;
+      const redirectTo =
+        (typeof location.state?.redirectTo === "string" &&
+          location.state.redirectTo.trim()) ||
+        getPostLoginRedirect();
+      const buyNowItem = location.state?.buyNowItem || getStoredBuyNowItem();
 
-      if (typeof redirectTo === "string" && redirectTo.trim()) {
+      if (redirectTo) {
+        clearPostLoginRedirect();
+        clearStoredBuyNowItem();
         navigate(redirectTo, {
           replace: true,
           state: buyNowItem ? { item: buyNowItem } : undefined,
@@ -100,7 +122,7 @@ const ConsumerLogin = () => {
         return;
       }
 
-      navigate("/consumer/market");
+      navigate("/consumer/profile");
     } catch (networkError) {
       setError("Unable to connect to server. Please try again.");
     } finally {

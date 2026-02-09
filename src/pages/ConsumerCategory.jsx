@@ -7,7 +7,9 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "../firebase"; // adjust path if needed
-import { isConsumerLoggedIn, getConsumerSession, clearConsumerSession } from "../utils/consumerSession";
+import { getConsumerSession } from "../utils/consumerSession";
+import { clearAllAuth, isConsumerAuthenticated } from "../utils/auth";
+import { setPostLoginRedirect, storeBuyNowItem } from "../utils/buyNowFlow";
 import "../style.css";
 
 /* --------------------------------------------------
@@ -203,6 +205,13 @@ const ConsumerCategory = () => {
       farm: item.farmerName,
       price: `INR ${item.pricePerKg} / ${item.unit}`,
       stock: `${item.quantityKg} ${item.unit} available`,
+      pricePerKg: item.pricePerKg,
+      quantityKg: item.quantityKg,
+      unit: item.unit,
+      farmerId: item.farmerId || item.ownerFarmerId,
+      farmerName: item.farmerName,
+      location: item.location,
+      category: item.category,
       urgent: Boolean(item.isUrgentDeal) &&
         (!item.dealExpiryTime ||
           (item.dealExpiryTime?.toDate?.() || new Date(item.dealExpiryTime)).getTime() >
@@ -233,9 +242,40 @@ const ConsumerCategory = () => {
   };
 
   const handleLogout = () => {
-    clearConsumerSession();
+    clearAllAuth();
     setShowProfileMenu(false);
-    navigate("/consumer/login");
+    navigate("/", { replace: true });
+  };
+
+  const handleBuyNow = (item) => {
+    if (item.__source !== "firestore") {
+      navigate("/consumer/market");
+      return;
+    }
+
+    const payload = {
+      id: item.id,
+      productName: item.name,
+      pricePerKg: Number(item.pricePerKg ?? item.price) || 0,
+      quantityKg: Number(item.quantityKg ?? item.quantity) || 0,
+      unit: item.unit || "kg",
+      farmerId: item.farmerId,
+      farmerName: item.farmerName || item.farm,
+      location: item.location,
+      category: item.category || selectedCategory.title,
+    };
+
+    storeBuyNowItem(payload);
+
+    if (!isConsumerAuthenticated()) {
+      setPostLoginRedirect("/consumer/buy-now", payload);
+      navigate("/login/consumer", {
+        state: { redirectTo: "/consumer/buy-now", buyNowItem: payload },
+      });
+      return;
+    }
+
+    navigate("/consumer/buy-now", { state: { item: payload } });
   };
 
   /* -------------------------------
@@ -272,7 +312,7 @@ const ConsumerCategory = () => {
             All Categories
           </button>
 
-          {isConsumerLoggedIn() ? (
+          {isConsumerAuthenticated() ? (
             <div className="cd-profile">
               <div
                 className="cd-avatar"
@@ -285,15 +325,18 @@ const ConsumerCategory = () => {
                 <div className="cd-profile-menu">
                   <p><strong>{session?.name || "Consumer"}</strong></p>
                   <p>{session?.email || "email@example.com"}</p>
-                  <button onClick={() => navigate("/")}>🏠 Home</button>
+                  <button onClick={() => navigate("/")}>Home</button>
                   <button onClick={() => navigate("/consumer/market")}>
-                    🛒 Marketplace
+                    Marketplace
                   </button>
                   <button onClick={() => navigate("/consumer/profile")}>
-                    👤 My Profile
+                    My Profile
+                  </button>
+                  <button onClick={() => navigate("/consumer/orders")}>
+                    My Orders
                   </button>
                   <button className="logout" onClick={handleLogout}>
-                    🚪 Logout
+                    Logout
                   </button>
                 </div>
               )}
@@ -301,7 +344,7 @@ const ConsumerCategory = () => {
           ) : (
             <button
               className="cd-login-btn"
-              onClick={() => navigate("/consumer/login")}
+              onClick={() => navigate("/login/consumer")}
             >
               Consumer Login
             </button>
@@ -384,9 +427,7 @@ const ConsumerCategory = () => {
 
                 <button
                   className="cd-btn cd-btn-primary cd-btn-small"
-                  onClick={() =>
-                    navigate("/consumer/login")
-                  }
+                  onClick={() => handleBuyNow(item)}
                 >
                   Buy Now
                 </button>

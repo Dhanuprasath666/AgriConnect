@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
+import { getConsumerSession } from "../utils/consumerSession";
+import { clearAllAuth, isConsumerAuthenticated } from "../utils/auth";
+import { setPostLoginRedirect, storeBuyNowItem } from "../utils/buyNowFlow";
 import "../style.css";
 
 function isDealActive(item) {
@@ -31,6 +35,9 @@ function discountedPrice(item) {
 }
 
 const ConsumerMarket = () => {
+  const navigate = useNavigate();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const session = getConsumerSession();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,8 +57,83 @@ const ConsumerMarket = () => {
     return () => unsub();
   }, []);
 
+  const handleLogout = () => {
+    clearAllAuth();
+    setShowProfileMenu(false);
+    navigate("/", { replace: true });
+  };
+
+  const handleBuyNow = (item) => {
+    const payload = {
+      id: item.id,
+      productName: item.productName || item.name,
+      pricePerKg: Number(item.pricePerKg ?? item.price) || 0,
+      quantityKg: Number(item.quantityKg ?? item.quantity) || 0,
+      unit: item.unit || "kg",
+      farmerId: item.farmerId || item.ownerFarmerId,
+      farmerName: item.farmerName,
+      location: item.location,
+      category: item.category,
+    };
+
+    storeBuyNowItem(payload);
+
+    if (!isConsumerAuthenticated()) {
+      setPostLoginRedirect("/consumer/buy-now", payload);
+      navigate("/login/consumer", {
+        state: { redirectTo: "/consumer/buy-now", buyNowItem: payload },
+      });
+      return;
+    }
+
+    navigate("/consumer/buy-now", { state: { item: payload } });
+  };
+
   return (
     <div className="market-container">
+      <header className="cd-topbar">
+        <button className="cd-brand" onClick={() => navigate("/")}>
+          <span className="ac-brand-text">AC</span>
+        </button>
+        <div className="cd-topbar-actions">
+          {isConsumerAuthenticated() ? (
+            <div className="cd-profile">
+              <div
+                className="cd-avatar"
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+              >
+                {session?.name ? session.name.charAt(0).toUpperCase() : "C"}
+              </div>
+
+              {showProfileMenu && (
+                <div className="cd-profile-menu">
+                  <p>
+                    <strong>{session?.name || "Consumer"}</strong>
+                  </p>
+                  <p>{session?.email || "email@example.com"}</p>
+                  <button onClick={() => navigate("/")}>Home</button>
+                  <button onClick={() => navigate("/consumer/profile")}>
+                    My Profile
+                  </button>
+                  <button onClick={() => navigate("/consumer/orders")}>
+                    My Orders
+                  </button>
+                  <button className="logout" onClick={handleLogout}>
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              className="cd-login-btn"
+              onClick={() => navigate("/login/consumer")}
+            >
+              Consumer Login
+            </button>
+          )}
+        </div>
+      </header>
       <h2 className="market-title">Consumer Market</h2>
 
       {loading ? (
@@ -98,6 +180,13 @@ const ConsumerMarket = () => {
               </p>
 
               <p>Location: {item.location || "Location not specified"}</p>
+
+              <button
+                className="cd-btn cd-btn-primary cd-btn-small"
+                onClick={() => handleBuyNow(item)}
+              >
+                Buy Now
+              </button>
             </div>
           ))}
         </div>

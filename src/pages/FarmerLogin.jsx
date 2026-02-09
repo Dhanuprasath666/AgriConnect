@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "../style.css";
 import {
   setCurrentFarmerAccessToken,
   setCurrentFarmerId,
   setCurrentFarmerName,
 } from "../lib/currentFarmer";
+import { isFarmerAuthenticated } from "../utils/auth";
+import { clearConsumerSession } from "../utils/consumerSession";
 
 const FarmerLogin = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -33,11 +34,11 @@ const FarmerLogin = () => {
     return () => clearInterval(intervalId);
   }, [dynamicMessages.length]);
 
-  const isAllowedEntry = location.state?.farmerLoginAccess === "top-nav";
-
-  if (!isAllowedEntry) {
-    return <Navigate to="/" replace />;
-  }
+  useEffect(() => {
+    if (isFarmerAuthenticated()) {
+      navigate("/farmer/dashboard", { replace: true });
+    }
+  }, [navigate]);
 
   const handleLogin = async () => {
     if (!mobile.trim() || !password.trim()) {
@@ -70,6 +71,8 @@ const FarmerLogin = () => {
       }
 
       if (data.role === "farmer") {
+        // Ensure farmer login does not keep any consumer session.
+        clearConsumerSession();
         const farmerId = mobile.replace(/\\D/g, "") || "demo-farmer";
         setCurrentFarmerId(farmerId);
         setCurrentFarmerName(data?.name || "Farmer");

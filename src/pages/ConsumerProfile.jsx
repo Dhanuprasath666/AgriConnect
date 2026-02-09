@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getConsumerSession, clearConsumerSession } from "../utils/consumerSession";
+import { getConsumerSession } from "../utils/consumerSession";
+import { clearAllAuth, isConsumerAuthenticated } from "../utils/auth";
 import "../style.css";
 
 const ConsumerProfile = () => {
@@ -59,16 +60,16 @@ const ConsumerProfile = () => {
 
   useEffect(() => {
     const consumerSession = getConsumerSession();
-    if (!consumerSession) {
-      navigate("/consumer/login");
+    if (!isConsumerAuthenticated()) {
+      navigate("/login/consumer");
     } else {
       setSession(consumerSession);
     }
   }, [navigate]);
 
   const handleLogout = () => {
-    clearConsumerSession();
-    navigate("/consumer/login");
+    clearAllAuth();
+    navigate("/", { replace: true });
   };
 
   const handleAddMoneyToWallet = (amount) => {
@@ -116,6 +117,20 @@ const ConsumerProfile = () => {
       </div>
 
       <div className="profile-content">
+        <div className="profile-quick-actions">
+          <button
+            className="profile-btn-primary"
+            onClick={() => navigate("/consumer/market")}
+          >
+            Go To Market
+          </button>
+          <button
+            className="profile-btn-primary"
+            onClick={() => navigate("/consumer/orders")}
+          >
+            My Orders
+          </button>
+        </div>
         {/* Profile Card */}
         <div className="profile-card-main">
           <div className="profile-avatar">

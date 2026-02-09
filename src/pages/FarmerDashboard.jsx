@@ -17,11 +17,14 @@ import "../style.css";
 import farmBg from "../assets/farm-bg.jpg";
 import { db } from "../firebase";
 import {
-  clearCurrentFarmerSession,
-  getCurrentFarmerAccessToken,
   getCurrentFarmerId,
   getCurrentFarmerName,
+  getCurrentFarmerDetails,
+  getCurrentFarmerAccessToken,
 } from "../lib/currentFarmer";
+import { clearAllAuth } from "../utils/auth";
+
+
 import { fetchOpenMeteoWeather } from "../lib/weather";
 import { generateRuleBasedAlerts } from "../lib/alerts";
 import { simulateEarningsFromListings } from "../lib/earnings";
@@ -58,7 +61,14 @@ const FarmerDashboard = () => {
   const farmerId = useMemo(() => getCurrentFarmerId(), []);
   const normalizedFarmerId = useMemo(() => normalizeText(farmerId), [farmerId]);
   const farmerName = useMemo(() => getCurrentFarmerName(), []);
+const normalizedFarmerName = useMemo(
+  () => normalizeText(farmerName),
+  [farmerName]
+);
+
   const accessToken = useMemo(() => getCurrentFarmerAccessToken(), []);
+  const farmerDetails = useMemo(() => getCurrentFarmerDetails(), []);
+
 
   const [profile, setProfile] = useState(null);
   const [weather, setWeather] = useState(null);
@@ -78,6 +88,7 @@ const FarmerDashboard = () => {
   const [soilMoistureInput, setSoilMoistureInput] = useState("");
   const [products, setProducts] = useState([]);
   const [alerts, setAlerts] = useState([]);
+  const [notifications, setNotifications] = useState([]);
 
   const [editRow, setEditRow] = useState(null);
   const [editPrice, setEditPrice] = useState("");
@@ -257,6 +268,21 @@ const FarmerDashboard = () => {
     const unsub = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
       setAlerts(data);
+    });
+
+    return () => unsub();
+  }, [farmerId]);
+
+  useEffect(() => {
+    const q = query(
+      collection(db, "notifications"),
+      where("farmerId", "==", farmerId),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsub = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setNotifications(data);
     });
 
     return () => unsub();
@@ -451,6 +477,14 @@ const FarmerDashboard = () => {
     await updateDoc(doc(db, "alerts", alertId), {
       dismissed: true,
       dismissedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  };
+
+  const markNotificationRead = async (notificationId) => {
+    await updateDoc(doc(db, "notifications", notificationId), {
+      read: true,
+      readAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
   };
@@ -685,6 +719,7 @@ const FarmerDashboard = () => {
                 <option value="overview">Overview</option>
                 <option value="weather">Weather</option>
                 <option value="alerts">Alerts</option>
+                <option value="notifications">Notifications</option>
                 <option value="crop">Crop</option>
                 <option value="farm-health">Farm Health</option>
                 <option value="revenue">Revenue</option>
@@ -725,7 +760,7 @@ const FarmerDashboard = () => {
                   <button
                     onClick={() => {
                       setShowProfile(false);
-                      clearCurrentFarmerSession();
+                      clearAllAuth();
                       navigate("/", { replace: true });
                     }}
                     className="logout"
@@ -929,6 +964,56 @@ const FarmerDashboard = () => {
                         >
                           Dismiss
                         </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section id="notifications" className="fd-card">
+            <div className="fd-card__header">
+              <div className="fd-card__title">
+                <span className="fd-card__icon">!</span>
+                <h3>Notifications</h3>
+              </div>
+              <span
+                className={`fd-badge ${
+                  notifications.some((note) => !note.read)
+                    ? "fd-badge--warning"
+                    : "fd-badge--soft"
+                }`}
+              >
+                {notifications.length === 0
+                  ? "No updates"
+                  : `${notifications.filter((note) => !note.read).length} new`}
+              </span>
+            </div>
+            <div className="fd-card__body">
+              {notifications.length === 0 ? (
+                <p className="fd-muted">No notifications yet.</p>
+              ) : (
+                <div className="fd-list">
+                  {notifications.slice(0, 5).map((note) => (
+                    <div
+                      key={note.id}
+                      className={`fd-listItem fdv3-alert ${
+                        note.read ? "" : "fdv3-alert--warning"
+                      }`}
+                    >
+                      <div className="fd-listItem__head">
+                        <div className="fd-listItem__title">
+                          {note.message || "New purchase update"}
+                        </div>
+                        {!note.read && (
+                          <button
+                            className="fdv3-btn fdv3-btn--chip"
+                            onClick={() => markNotificationRead(note.id)}
+                          >
+                            Mark read
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

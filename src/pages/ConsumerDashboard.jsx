@@ -1,8 +1,11 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { isConsumerLoggedIn, getConsumerSession, clearConsumerSession } from "../utils/consumerSession";
+import { getConsumerSession } from "../utils/consumerSession";
+import { clearAllAuth, isConsumerAuthenticated } from "../utils/auth";
+import { setPostLoginRedirect } from "../utils/buyNowFlow";
 import "../style.css";
 import { useState } from "react";
+import UrgentDealsScroller from "../components/UrgentDealsScroller";
 
 const ConsumerDashboard = () => {
   const navigate = useNavigate();
@@ -42,6 +45,13 @@ const ConsumerDashboard = () => {
     { id: 3, title: "Bananas", offer: "Up to 28% off", eta: "Ends in 2 days" },
   ];
 
+  const scrollerDeals = quickDeals.map((deal) => ({
+    id: deal.id,
+    title: deal.title,
+    badge: deal.offer,
+    meta: deal.eta,
+  }));
+
   const handleStartShopping = () => {
     if (categories.length === 0) {
       return;
@@ -52,17 +62,20 @@ const ConsumerDashboard = () => {
   };
 
   const handleBuyNow = () => {
-    if (isConsumerLoggedIn()) {
+    if (isConsumerAuthenticated()) {
       navigate("/consumer/buy-now");
     } else {
-      navigate("/consumer/login");
+      setPostLoginRedirect("/consumer/buy-now");
+      navigate("/login/consumer", {
+        state: { redirectTo: "/consumer/buy-now" },
+      });
     }
   };
 
   const handleLogout = () => {
-    clearConsumerSession();
+    clearAllAuth();
     setShowProfileMenu(false);
-    navigate("/consumer/login");
+    navigate("/", { replace: true });
   };
 
   return (
@@ -72,7 +85,7 @@ const ConsumerDashboard = () => {
           <span className="ac-brand-text">AC</span>
         </button>
         <div className="cd-topbar-actions">
-          {isConsumerLoggedIn() ? (
+          {isConsumerAuthenticated() ? (
             <div className="cd-profile">
               <div
                 className="cd-avatar"
@@ -85,15 +98,18 @@ const ConsumerDashboard = () => {
                 <div className="cd-profile-menu">
                   <p><strong>{session?.name || "Consumer"}</strong></p>
                   <p>{session?.email || "email@example.com"}</p>
-                  <button onClick={() => navigate("/")}>🏠 Home</button>
+                  <button onClick={() => navigate("/")}>Home</button>
                   <button onClick={() => navigate("/consumer/market")}>
-                    🛒 Marketplace
+                    Marketplace
                   </button>
                   <button onClick={() => navigate("/consumer/profile")}>
-                    👤 My Profile
+                    My Profile
+                  </button>
+                  <button onClick={() => navigate("/consumer/orders")}>
+                    My Orders
                   </button>
                   <button className="logout" onClick={handleLogout}>
-                    🚪 Logout
+                    Logout
                   </button>
                 </div>
               )}
@@ -101,7 +117,7 @@ const ConsumerDashboard = () => {
           ) : (
             <button
               className="cd-login-btn"
-              onClick={() => navigate("/consumer/login")}
+              onClick={() => navigate("/login/consumer")}
             >
               Consumer Login
             </button>
@@ -186,21 +202,14 @@ const ConsumerDashboard = () => {
             <h2>Fresh stock ending soon</h2>
           </div>
 
-          <div className="cd-deals-grid">
-            {quickDeals.map((deal) => (
-              <article key={deal.id} className="cd-deal-card">
-                <h3>{deal.title}</h3>
-                <p className="cd-deal-offer">{deal.offer}</p>
-                <p className="cd-deal-meta">{deal.eta}</p>
-                <button
-                  className="cd-btn cd-btn-primary cd-btn-small"
-                  onClick={handleBuyNow}
-                >
-                  Buy Now
-                </button>
-              </article>
-            ))}
-          </div>
+          <UrgentDealsScroller
+            deals={scrollerDeals}
+            emptyText="No urgent offers right now."
+            cardClassName="cd-deal-card"
+            showButton
+            buttonLabel="Go To Market"
+            onDealClick={() => navigate("/consumer/market")}
+          />
         </section>
       </main>
     </div>

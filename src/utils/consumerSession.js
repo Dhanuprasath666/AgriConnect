@@ -7,6 +7,7 @@ export const persistConsumerSession = (session = {}) => {
 
   const payload = {
     role: "consumer",
+    consumerId: session.consumerId || session.mobile || "",
     ...session,
     authenticatedAt: new Date().toISOString(),
   };

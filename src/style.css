@@ -523,6 +523,63 @@ body {
   gap: 16px;
 }
 
+.ac-deals-scroll {
+  margin-top: 28px;
+  position: relative;
+  overflow: hidden;
+  padding-bottom: 10px;
+}
+
+.ac-deals-track {
+  display: flex;
+  gap: 16px;
+  width: max-content;
+  animation: ac-deals-scroll 26s linear infinite;
+}
+
+.ac-deals-scroll:hover .ac-deals-track {
+  animation-play-state: paused;
+}
+
+.ac-deal-card {
+  min-width: 260px;
+  cursor: pointer;
+}
+
+.ac-deal-badge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(135deg, #d93f36, #ef5f45);
+  margin-bottom: 10px;
+}
+
+.ac-deal-meta {
+  color: rgba(20, 63, 44, 0.6);
+  font-size: 0.92rem;
+  margin-bottom: 16px;
+}
+
+.ac-deal-btn {
+  border: none;
+  cursor: pointer;
+  border-radius: 12px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #1f7a4d, #2ea96d);
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(31, 122, 77, 0.24);
+}
+
+.lp-deal-card--scroll {
+  min-width: 260px;
+  cursor: pointer;
+}
+
 .lp-deal-card {
   border-radius: 20px;
   border: 1px solid rgba(18, 52, 37, 0.12);
@@ -598,6 +655,15 @@ body {
   }
   to {
     opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes ac-deals-scroll {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
     transform: translateX(0);
   }
 }
@@ -6622,6 +6688,193 @@ body {
 .fdx-callout--danger {
   border-color: rgba(185, 28, 28, 0.2);
   background: rgba(185, 28, 28, 0.08);
+}
+
+/* =======================
+   BUY NOW (SINGLE ITEM)
+======================= */
+
+.bn-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f5faf6 0%, #eef6f1 100%);
+  padding: 24px;
+  font-family: "Poppins", "Trebuchet MS", sans-serif;
+}
+
+.bn-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.bn-back {
+  border: 1px solid rgba(20, 63, 44, 0.12);
+  background: #ffffff;
+  color: #143f2c;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bn-main {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 24px;
+}
+
+.bn-card,
+.bn-product,
+.bn-order {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid rgba(20, 63, 44, 0.12);
+  box-shadow: 0 16px 30px rgba(20, 63, 44, 0.08);
+  padding: 24px;
+}
+
+.bn-product-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.bn-chip {
+  background: rgba(31, 122, 77, 0.12);
+  color: #1f7a4d;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.bn-meta {
+  color: #5d7b6a;
+  margin-top: 10px;
+}
+
+.bn-price {
+  font-size: 28px;
+  font-weight: 800;
+  margin-top: 18px;
+}
+
+.bn-price span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #60796b;
+  margin-left: 6px;
+}
+
+.bn-stock {
+  margin-top: 10px;
+  color: #355242;
+  font-weight: 600;
+}
+
+.bn-order h2 {
+  margin-bottom: 12px;
+}
+
+.bn-qty-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.bn-qty-row input {
+  width: 120px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(20, 63, 44, 0.2);
+  font-size: 16px;
+}
+
+.bn-summary {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.bn-summary div {
+  display: flex;
+  justify-content: space-between;
+  color: #4b6758;
+  font-weight: 600;
+}
+
+.bn-error {
+  color: #b91c1c;
+  margin-bottom: 10px;
+}
+
+.bn-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bn-btn-primary {
+  background: linear-gradient(135deg, #1f7a4d, #2a9a61);
+  color: #ffffff;
+  box-shadow: 0 12px 22px rgba(31, 122, 77, 0.22);
+}
+
+/* =======================
+   CONSUMER ORDERS
+======================= */
+
+.orders-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f6fbf7 0%, #edf5f0 100%);
+  font-family: "Poppins", "Trebuchet MS", sans-serif;
+}
+
+.orders-main {
+  width: min(1140px, 92vw);
+  margin: 0 auto;
+  padding: 10px 0 60px;
+}
+
+.orders-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.orders-empty {
+  padding: 40px 24px;
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid rgba(20, 63, 44, 0.12);
+  text-align: center;
+  color: #5a7566;
+}
+
+/* =======================
+   PROFILE QUICK ACTIONS
+======================= */
+
+.profile-quick-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+  .bn-main {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 1024px) {

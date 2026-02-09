@@ -14,15 +14,17 @@ import ConsumerRegister from "./pages/ConsumerRegister";
 import ConsumerBuyNow from "./pages/ConsumerBuyNow";
 import ConsumerProfile from "./pages/ConsumerProfile";
 import SidebarLayout from "./components/SidebarLayout";
+import ConsumerOrders from "./pages/ConsumerOrders";
+import RequireConsumerAuth from "./components/RequireConsumerAuth";
+import RequireFarmerAuth from "./components/RequireFarmerAuth";
 
 function App() {
   return (
     <BrowserRouter>
       <div className="ac-app-content">
         <Routes>
+          <Route element={<SidebarLayout />}>
           <Route path="/" element={<LandingPage />} />
-
-        <Route element={<SidebarLayout />}>
           <Route path="/register" element={<Register />} />
           <Route
             path="/register/farmer"
@@ -37,16 +39,60 @@ function App() {
           <Route path="/farmer/register" element={<FarmerRegister />} />
           <Route path="/consumer/register" element={<ConsumerRegister />} />
 
-          <Route path="/farmer/login" element={<FarmerLogin />} />
-          <Route path="/consumer/login" element={<ConsumerLogin />} />
-          <Route path="/farmer/dashboard" element={<FarmerDashboard />} />
+          <Route path="/login/farmer" element={<FarmerLogin />} />
+          <Route path="/login/consumer" element={<ConsumerLogin />} />
+          <Route
+            path="/farmer/login"
+            element={<Navigate to="/login/farmer" replace />}
+          />
+          <Route
+            path="/consumer/login"
+            element={<Navigate to="/login/consumer" replace />}
+          />
+          <Route
+            path="/farmer/dashboard"
+            element={
+              <RequireFarmerAuth>
+                <FarmerDashboard />
+              </RequireFarmerAuth>
+            }
+          />
           <Route path="/consumer" element={<ConsumerDashboard />} />
-          <Route path="/farmer/add-product" element={<AddProduct />} />
+          <Route
+            path="/farmer/add-product"
+            element={
+              <RequireFarmerAuth>
+                <AddProduct />
+              </RequireFarmerAuth>
+            }
+          />
           <Route path="/consumer/market" element={<ConsumerMarket />} />
-          <Route path="/consumer/buy-now" element={<ConsumerBuyNow />} />
-          <Route path="/consumer/profile" element={<ConsumerProfile />} />
+          <Route
+            path="/consumer/buy-now"
+            element={
+              <RequireConsumerAuth>
+                <ConsumerBuyNow />
+              </RequireConsumerAuth>
+            }
+          />
+          <Route
+            path="/consumer/profile"
+            element={
+              <RequireConsumerAuth>
+                <ConsumerProfile />
+              </RequireConsumerAuth>
+            }
+          />
+          <Route
+            path="/consumer/orders"
+            element={
+              <RequireConsumerAuth>
+                <ConsumerOrders />
+              </RequireConsumerAuth>
+            }
+          />
           <Route path="/consumer/:category" element={<ConsumerCategory />} />
-        </Route>
+          </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
