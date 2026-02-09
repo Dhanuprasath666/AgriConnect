@@ -40,7 +40,7 @@ const Register = () => {
     <div className="rg-page">
       <header className="rg-topbar">
         <button className="rg-brand" onClick={() => navigate("/")}>
-          AgriConnect
+          <span className="ac-brand-text">AC</span>
         </button>
         <button className="rg-top-btn" onClick={() => navigate("/")}>
           Back to Home
@@ -52,8 +52,9 @@ const Register = () => {
           <p className="rg-kicker">Registration</p>
           <h1>Choose your account type</h1>
           <p className="rg-subtext">
-            Select how you want to join AgriConnect and continue to profile
-            registration.
+            Select how you want to join{" "}
+            <span className="ac-brand-text ac-brand-text--inline">AC</span> and
+            continue to profile registration.
           </p>
 
           <div className="rg-step-strip">

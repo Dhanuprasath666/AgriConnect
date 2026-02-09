@@ -131,7 +131,7 @@ const ConsumerRegister = () => {
     <div className="rg-page">
       <header className="rg-topbar">
         <button className="rg-brand" onClick={() => navigate("/")}>
-          AgriConnect
+          <span className="ac-brand-text">AC</span>
         </button>
         <button className="rg-top-btn" onClick={() => navigate("/register")}>
           Back

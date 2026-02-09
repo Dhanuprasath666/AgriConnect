@@ -82,7 +82,6 @@ const LandingPage = () => {
       <header className="lp-nav">
         <button className="lp-brand" onClick={() => navigate("/")}>
           <span className="lp-brand-mark">AC</span>
-          <span className="lp-brand-name">AgriConnect</span>
         </button>
 
         <div className="lp-nav-links">
