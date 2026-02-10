@@ -12,7 +12,7 @@ const Sidebar = () => {
   const dashboardRoute = isFarmer ? "/farmer/dashboard" : "/consumer";
   const loginRoute = isFarmer ? "/login/farmer" : "/login/consumer";
   const registerRoute = "/register";
-  const marketRoute = "/consumer/market";
+  const marketRoute = "/consumer/dashboard";
 
   return (
     <aside className="ac-sidebar">
@@ -173,3 +173,4 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+

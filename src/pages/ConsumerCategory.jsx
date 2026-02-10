@@ -145,6 +145,16 @@ const categoryCatalog = {
   },
 };
 
+const getHardcodedStock = (item) => {
+  if (typeof window === "undefined" || !window.localStorage) return null;
+  const key = `ac_hardcoded_stock_${item.id}`;
+  const raw = window.localStorage.getItem(key);
+  const stored = raw == null ? null : Number(raw);
+  if (Number.isFinite(stored)) return stored;
+  const match = String(item.stock || "").match(/(\d+(\.\d+)?)/);
+  return match ? Number(match[1]) : null;
+};
+
 /* --------------------------------------------------
    COMPONENT
 -------------------------------------------------- */
@@ -196,6 +206,8 @@ const ConsumerCategory = () => {
   const mergedItems = [
     ...selectedCategory.items.map((item) => ({
       ...item,
+      quantityKg: getHardcodedStock(item),
+      stock: `${getHardcodedStock(item) ?? 0} kg available`,
       __source: "hardcoded",
     })),
 
@@ -248,21 +260,24 @@ const ConsumerCategory = () => {
   };
 
   const handleBuyNow = (item) => {
-    if (item.__source !== "firestore") {
-      navigate("/consumer/market");
-      return;
-    }
+    const parseNumber = (value) => {
+      if (typeof value === "number" && Number.isFinite(value)) return value;
+      if (typeof value !== "string") return 0;
+      const match = value.match(/(\d+(\.\d+)?)/);
+      return match ? Number(match[1]) : 0;
+    };
 
     const payload = {
       id: item.id,
-      productName: item.name,
-      pricePerKg: Number(item.pricePerKg ?? item.price) || 0,
-      quantityKg: Number(item.quantityKg ?? item.quantity) || 0,
+      productName: item.name || item.productName,
+      pricePerKg: Number(item.pricePerKg) || parseNumber(item.price),
+      quantityKg: Number(item.quantityKg) || parseNumber(item.stock),
       unit: item.unit || "kg",
-      farmerId: item.farmerId,
+      farmerId: item.farmerId || "",
       farmerName: item.farmerName || item.farm,
       location: item.location,
       category: item.category || selectedCategory.title,
+      source: item.__source,
     };
 
     storeBuyNowItem(payload);
@@ -326,7 +341,7 @@ const ConsumerCategory = () => {
                   <p><strong>{session?.name || "Consumer"}</strong></p>
                   <p>{session?.email || "email@example.com"}</p>
                   <button onClick={() => navigate("/")}>Home</button>
-                  <button onClick={() => navigate("/consumer/market")}>
+                  <button onClick={() => navigate("/consumer/dashboard")}>
                     Marketplace
                   </button>
                   <button onClick={() => navigate("/consumer/profile")}>
@@ -441,3 +456,4 @@ const ConsumerCategory = () => {
 };
 
 export default ConsumerCategory;
+

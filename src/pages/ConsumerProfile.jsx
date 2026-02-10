@@ -1,40 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { db } from "../firebase";
 import { getConsumerSession } from "../utils/consumerSession";
-import { clearAllAuth, isConsumerAuthenticated } from "../utils/auth";
+import { clearAllAuth, getConsumerIdentity, isConsumerAuthenticated } from "../utils/auth";
+import { setPostLoginRedirect } from "../utils/buyNowFlow";
 import "../style.css";
 
 const ConsumerProfile = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [session, setSession] = useState(null);
   const [activeSection, setActiveSection] = useState("wallet");
   const [walletBalance, setWalletBalance] = useState(1500); // Mock data
-  const [orders] = useState([
-    {
-      id: "ORD001",
-      date: "2025-02-05",
-      items: "Organic Tomatoes (5kg)",
-      total: 250,
-      status: "Delivered",
-      statusColor: "success",
-    },
-    {
-      id: "ORD002",
-      date: "2025-02-06",
-      items: "Fresh Spinach Bundle (3kg)",
-      total: 180,
-      status: "In Transit",
-      statusColor: "processing",
-    },
-    {
-      id: "ORD003",
-      date: "2025-02-07",
-      items: "Banana Bunch (2kg)",
-      total: 120,
-      status: "Confirmed",
-      statusColor: "pending",
-    },
-  ]);
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
 
   const [supportTickets, setSupportTickets] = useState([
     {
@@ -67,14 +47,91 @@ const ConsumerProfile = () => {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    const requested = location.state?.section;
+    if (requested === "orders") {
+      setActiveSection("orders");
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    const identity = getConsumerIdentity();
+    const consumerKey = identity?.consumerId || session?.mobile || "";
+    if (!consumerKey) {
+      setOrders([]);
+      setOrdersLoading(false);
+      return;
+    }
+
+    setOrdersLoading(true);
+
+    const q = query(
+      collection(db, "orders"),
+      where("consumerId", "==", consumerKey)
+    );
+
+    const unsub = onSnapshot(
+      q,
+      (snapshot) => {
+        const mapped = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data() || {};
+          const createdAt = data.createdAt?.toDate?.() || data.createdAt;
+          const dateLabel = createdAt
+            ? new Date(createdAt).toLocaleString()
+            : "N/A";
+          const qty = data.quantity || 0;
+          const unit = data.unit || "kg";
+          const items = `${data.productName || "Product"} (${qty}${unit})`;
+          const status = data.status || "Placed";
+          const statusColor =
+            status === "Delivered"
+              ? "success"
+              : status === "In Transit"
+              ? "processing"
+              : "pending";
+
+          return {
+            id: data.orderId || docSnap.id,
+            date: dateLabel,
+            items,
+            total: (data.price || 0) * qty,
+            status,
+            statusColor,
+            createdAt: createdAt ? new Date(createdAt).getTime() : 0,
+          };
+        });
+        mapped.sort((a, b) => b.createdAt - a.createdAt);
+        setOrders(mapped);
+        setOrdersLoading(false);
+      },
+      () => {
+        setOrders([]);
+        setOrdersLoading(false);
+      }
+    );
+
+    return () => unsub();
+  }, [session?.mobile]);
+
   const handleLogout = () => {
     clearAllAuth();
     navigate("/", { replace: true });
   };
 
+  const handleBuyNow = () => {
+    if (!isConsumerAuthenticated()) {
+      setPostLoginRedirect("/consumer/buy-now");
+      navigate("/login/consumer", {
+        state: { redirectTo: "/consumer/buy-now" },
+      });
+      return;
+    }
+    navigate("/consumer/buy-now");
+  };
+
   const handleAddMoneyToWallet = (amount) => {
     setWalletBalance(walletBalance + amount);
-    alert(`₹${amount} added to wallet successfully!`);
+    alert(`â‚¹${amount} added to wallet successfully!`);
   };
 
   const handleSubmitTicket = () => {
@@ -108,7 +165,7 @@ const ConsumerProfile = () => {
     <div className="profile-container">
       <div className="profile-header">
         <button className="profile-back-btn" onClick={() => navigate("/consumer")}>
-          ← Back to Dashboard
+          â† Back to Dashboard
         </button>
         <h1>My Profile</h1>
         <button className="profile-logout-btn" onClick={handleLogout}>
@@ -120,7 +177,7 @@ const ConsumerProfile = () => {
         <div className="profile-quick-actions">
           <button
             className="profile-btn-primary"
-            onClick={() => navigate("/consumer/market")}
+            onClick={() => navigate("/consumer/dashboard")}
           >
             Go To Market
           </button>
@@ -155,34 +212,34 @@ const ConsumerProfile = () => {
             className={`profile-nav-tab ${activeSection === "wallet" ? "active" : ""}`}
             onClick={() => setActiveSection("wallet")}
           >
-            💰 My Wallet
+            ðŸ’° My Wallet
           </button>
           <button
             className={`profile-nav-tab ${activeSection === "orders" ? "active" : ""}`}
             onClick={() => setActiveSection("orders")}
           >
-            📦 Orders
+            ðŸ“¦ Orders
           </button>
           <button
             className={`profile-nav-tab ${activeSection === "support" ? "active" : ""}`}
             onClick={() => setActiveSection("support")}
           >
-            🆘 Help & Support
+            ðŸ†˜ Help & Support
           </button>
         </div>
 
         {/* My Wallet Section */}
         {activeSection === "wallet" && (
           <div className="profile-section wallet-section">
-            <h2>💰 My Wallet</h2>
+            <h2>ðŸ’° My Wallet</h2>
             <div className="wallet-card">
               <div className="wallet-balance">
                 <p>Total Balance</p>
-                <h3>₹{walletBalance}</h3>
+                <h3>â‚¹{walletBalance}</h3>
               </div>
               <div className="wallet-info">
-                <p>💡 Use wallet balance for faster checkout</p>
-                <p>✨ Earn cashback on every purchase</p>
+                <p>ðŸ’¡ Use wallet balance for faster checkout</p>
+                <p>âœ¨ Earn cashback on every purchase</p>
               </div>
             </div>
 
@@ -190,13 +247,13 @@ const ConsumerProfile = () => {
               <h3>Add Money</h3>
               <div className="wallet-add-buttons">
                 <button className="add-money-btn" onClick={() => handleAddMoneyToWallet(500)}>
-                  + ₹500
+                  + â‚¹500
                 </button>
                 <button className="add-money-btn" onClick={() => handleAddMoneyToWallet(1000)}>
-                  + ₹1000
+                  + â‚¹1000
                 </button>
                 <button className="add-money-btn" onClick={() => handleAddMoneyToWallet(2000)}>
-                  + ₹2000
+                  + â‚¹2000
                 </button>
                 <button className="add-money-btn custom" onClick={() => alert("Custom amount dialog")}>
                   Custom Amount
@@ -212,21 +269,21 @@ const ConsumerProfile = () => {
                     <p className="transaction-type">Order Payment</p>
                     <p className="transaction-date">2025-02-07</p>
                   </div>
-                  <span className="transaction-amount debit">-₹120</span>
+                  <span className="transaction-amount debit">-â‚¹120</span>
                 </div>
                 <div className="transaction-item">
                   <div className="transaction-info">
                     <p className="transaction-type">Cashback Received</p>
                     <p className="transaction-date">2025-02-06</p>
                   </div>
-                  <span className="transaction-amount credit">+₹20</span>
+                  <span className="transaction-amount credit">+â‚¹20</span>
                 </div>
                 <div className="transaction-item">
                   <div className="transaction-info">
                     <p className="transaction-type">Wallet Top-up</p>
                     <p className="transaction-date">2025-02-05</p>
                   </div>
-                  <span className="transaction-amount credit">+₹1000</span>
+                  <span className="transaction-amount credit">+â‚¹1000</span>
                 </div>
               </div>
             </div>
@@ -236,14 +293,18 @@ const ConsumerProfile = () => {
         {/* Orders Section */}
         {activeSection === "orders" && (
           <div className="profile-section orders-section">
-            <h2>📦 My Orders</h2>
+            <h2>ðŸ“¦ My Orders</h2>
 
-            {orders.length === 0 ? (
+            {ordersLoading ? (
+              <div className="empty-state">
+                <p>Loading orders...</p>
+              </div>
+            ) : orders.length === 0 ? (
               <div className="empty-state">
                 <p>No orders yet</p>
                 <button 
                   className="profile-btn-primary"
-                  onClick={() => navigate("/consumer/buy-now")}
+                  onClick={handleBuyNow}
                 >
                   Start Shopping
                 </button>
@@ -267,7 +328,7 @@ const ConsumerProfile = () => {
                     </div>
 
                     <div className="order-footer">
-                      <p className="order-total">₹{order.total}</p>
+                      <p className="order-total">â‚¹{order.total}</p>
                       <div className="order-actions">
                         <button 
                           className="order-btn secondary"
@@ -277,7 +338,7 @@ const ConsumerProfile = () => {
                         </button>
                         <button 
                           className="order-btn secondary"
-                          onClick={() => navigate("/consumer/buy-now")}
+                          onClick={handleBuyNow}
                         >
                           Reorder
                         </button>
@@ -293,32 +354,32 @@ const ConsumerProfile = () => {
         {/* Help & Support Section */}
         {activeSection === "support" && (
           <div className="profile-section support-section">
-            <h2>🆘 Help & Support</h2>
+            <h2>ðŸ†˜ Help & Support</h2>
 
             <div className="support-grid">
               <div className="support-card">
-                <div className="support-icon">📱</div>
+                <div className="support-icon">ðŸ“±</div>
                 <h3>Call Us</h3>
                 <p>+91 XXXX-XXXX-XX</p>
                 <p className="support-time">Available 9 AM - 6 PM</p>
               </div>
 
               <div className="support-card">
-                <div className="support-icon">✉️</div>
+                <div className="support-icon">âœ‰ï¸</div>
                 <h3>Email Us</h3>
                 <p>support@agriconnect.com</p>
                 <p className="support-time">Response within 24 hours</p>
               </div>
 
               <div className="support-card">
-                <div className="support-icon">💬</div>
+                <div className="support-icon">ðŸ’¬</div>
                 <h3>Live Chat</h3>
                 <p>Chat with our team</p>
                 <p className="support-time">9 AM - 6 PM</p>
               </div>
 
               <div className="support-card">
-                <div className="support-icon">❓</div>
+                <div className="support-icon">â“</div>
                 <h3>FAQ</h3>
                 <p>Common questions answered</p>
                 <p className="support-time">Available 24/7</p>
@@ -459,3 +520,4 @@ const ConsumerProfile = () => {
 };
 
 export default ConsumerProfile;
+

@@ -4,6 +4,7 @@ import {
   collection,
   doc,
   runTransaction,
+  setDoc,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../firebase";
@@ -26,6 +27,25 @@ const ConsumerBuyNow = () => {
   const [error, setError] = useState("");
   const [isPlacing, setIsPlacing] = useState(false);
 
+  const getHardcodedStock = (itemData) => {
+    if (!itemData || typeof window === "undefined" || !window.localStorage) {
+      return null;
+    }
+    const key = `ac_hardcoded_stock_${itemData.id}`;
+    const raw = window.localStorage.getItem(key);
+    const stored = raw == null ? null : Number(raw);
+    if (Number.isFinite(stored)) return stored;
+    return null;
+  };
+
+  const setHardcodedStock = (itemData, value) => {
+    if (!itemData || typeof window === "undefined" || !window.localStorage) {
+      return;
+    }
+    const key = `ac_hardcoded_stock_${itemData.id}`;
+    window.localStorage.setItem(key, String(value));
+  };
+
   useEffect(() => {
     const stateItem = location.state?.item;
     const storedItem = getStoredBuyNowItem();
@@ -37,7 +57,11 @@ const ConsumerBuyNow = () => {
   }, [location.state]);
 
   const availableStock = useMemo(() => {
-    const stock = Number(item?.quantityKg ?? item?.quantity ?? 0);
+    const hardcodedStock =
+      item?.source === "hardcoded" ? getHardcodedStock(item) : null;
+    const stock = Number(
+      hardcodedStock ?? item?.quantityKg ?? item?.quantity ?? 0
+    );
     return Number.isFinite(stock) ? stock : 0;
   }, [item]);
 
@@ -81,74 +105,123 @@ const ConsumerBuyNow = () => {
     setIsPlacing(true);
 
     try {
-      const productRef = doc(db, "marketItems", item.id);
       const orderRef = doc(collection(db, "orders"));
       const notificationRef = doc(collection(db, "notifications"));
+      const consumerNotificationRef = doc(collection(db, "notifications"));
 
-      await runTransaction(db, async (transaction) => {
-        // Transaction ensures stock decrement + order + notification stay consistent.
-        const productSnap = await transaction.get(productRef);
-        if (!productSnap.exists()) {
-          throw new Error("This product is no longer available.");
-        }
+      const consumerName = consumerIdentity?.name || "Consumer";
+      const consumerMobile = consumerIdentity?.mobile || "";
+      const consumerId = consumerIdentity?.consumerId || consumerMobile || "unknown";
+      const productName = item.productName || item.name || "Product";
+      const unit = item.unit || "kg";
 
-        const productData = productSnap.data() || {};
-        const currentQty = Number(
-          productData.quantityKg ?? productData.quantity ?? 0
-        );
+      if (item?.source === "hardcoded") {
+        const currentQty = availableStock;
         if (!Number.isFinite(currentQty) || currentQty <= 0) {
           throw new Error("This product is out of stock.");
         }
         if (desiredQty > currentQty) {
-          throw new Error(`Only ${currentQty} ${item?.unit || "kg"} left.`);
+          throw new Error(`Only ${currentQty} ${unit} left.`);
         }
 
         const updatedQty = currentQty - desiredQty;
-        transaction.update(productRef, {
-          quantityKg: updatedQty,
-          quantity: updatedQty,
-          outOfStock: updatedQty === 0,
-          updatedAt: serverTimestamp(),
-        });
+        setHardcodedStock(item, updatedQty);
 
-        const consumerName = consumerIdentity?.name || "Consumer";
-        const consumerMobile = consumerIdentity?.mobile || "";
-        const consumerId = consumerIdentity?.consumerId || consumerMobile || "unknown";
-        const productName = item.productName || productData.productName || "Product";
-        const unit = item.unit || productData.unit || "kg";
-        const notificationUnit = "kg";
-        const farmerId =
-          item.farmerId || productData.farmerId || productData.ownerFarmerId;
-        const farmerName = item.farmerName || productData.farmerName || "";
+        await Promise.all([
+          setDoc(orderRef, {
+            consumerId,
+            consumerName,
+            farmerId: item.farmerId || "demo-farmer",
+            productId: item.id,
+            productName,
+            quantity: desiredQty,
+            unit,
+            price: pricePerKg,
+            totalPrice: desiredQty * pricePerKg,
+            status: "Placed",
+            createdAt: serverTimestamp(),
+          }),
+          setDoc(notificationRef, {
+            farmerId: item.farmerId || "demo-farmer",
+            message: `Consumer ${consumerName} purchased ${desiredQty} kg of ${productName}`,
+            read: false,
+            createdAt: serverTimestamp(),
+          }),
+          setDoc(consumerNotificationRef, {
+            consumerId,
+            message: `Order placed: ${desiredQty} kg of ${productName}`,
+            read: false,
+            createdAt: serverTimestamp(),
+          }),
+        ]);
+      } else {
+        const productRef = doc(db, "marketItems", item.id);
 
-        transaction.set(orderRef, {
-          orderId: orderRef.id,
-          consumerId,
-          consumerName,
-          consumerMobile,
-          productId: item.id,
-          productName,
-          farmerId: farmerId || "unknown",
-          farmerName,
-          quantity: desiredQty,
-          unit,
-          price: pricePerKg,
-          totalPrice: desiredQty * pricePerKg,
-          orderStatus: "Placed",
-          createdAt: serverTimestamp(),
-        });
+        await runTransaction(db, async (transaction) => {
+          // Transaction ensures stock decrement + order + notification stay consistent.
+          const productSnap = await transaction.get(productRef);
+          if (!productSnap.exists()) {
+            throw new Error("This product is no longer available.");
+          }
 
-        transaction.set(notificationRef, {
-          farmerId: farmerId || "unknown",
-          orderId: orderRef.id,
-          consumerName,
-          message: `Consumer ${consumerName} purchased ${desiredQty} ${notificationUnit} of ${productName}`,
-          read: false,
-          createdAt: serverTimestamp(),
+          const productData = productSnap.data() || {};
+          const currentQty = Number(
+            productData.quantityKg ?? productData.quantity ?? 0
+          );
+          if (!Number.isFinite(currentQty) || currentQty <= 0) {
+            throw new Error("This product is out of stock.");
+          }
+          if (desiredQty > currentQty) {
+            throw new Error(`Only ${currentQty} ${unit} left.`);
+          }
+
+          const updatedQty = currentQty - desiredQty;
+          transaction.update(productRef, {
+            quantityKg: updatedQty,
+            quantity: updatedQty,
+            outOfStock: updatedQty === 0,
+            out_of_stock: updatedQty === 0,
+            updatedAt: serverTimestamp(),
+          });
+
+          const farmerId =
+            item.farmerId || productData.farmerId || productData.ownerFarmerId;
+          const safeFarmerId = farmerId || "unknown";
+
+          transaction.set(orderRef, {
+            consumerId,
+            consumerName,
+            farmerId: safeFarmerId,
+            productId: item.id,
+            productName,
+            quantity: desiredQty,
+            unit,
+            price: pricePerKg,
+            totalPrice: desiredQty * pricePerKg,
+            status: "Placed",
+            createdAt: serverTimestamp(),
+          });
+
+          transaction.set(notificationRef, {
+            farmerId: safeFarmerId,
+            message: `Consumer ${consumerName} purchased ${desiredQty} kg of ${productName}`,
+            read: false,
+            createdAt: serverTimestamp(),
+          });
+
+          transaction.set(consumerNotificationRef, {
+            consumerId,
+            message: `Order placed: ${desiredQty} kg of ${productName}`,
+            read: false,
+            createdAt: serverTimestamp(),
+          });
         });
+      }
+
+      navigate("/consumer/profile", {
+        replace: true,
+        state: { section: "orders" },
       });
-
-      navigate("/consumer/orders", { replace: true });
     } catch (e) {
       setError(e?.message || "Unable to place order. Please try again.");
     } finally {
@@ -162,7 +235,7 @@ const ConsumerBuyNow = () => {
         <div className="bn-card">
           <h2>No product selected</h2>
           <p>Select a product from the marketplace to buy now.</p>
-          <button className="bn-btn bn-btn-primary" onClick={() => navigate("/consumer/market")}>
+          <button className="bn-btn bn-btn-primary" onClick={() => navigate("/consumer/dashboard")}>
             Go To Market
           </button>
         </div>
@@ -263,3 +336,4 @@ const ConsumerBuyNow = () => {
 };
 
 export default ConsumerBuyNow;
+

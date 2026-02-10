@@ -52,7 +52,7 @@ const ConsumerLogin = () => {
 
   useEffect(() => {
     if (isConsumerAuthenticated()) {
-      navigate("/consumer/profile", { replace: true });
+      navigate("/consumer/dashboard", { replace: true });
     }
   }, [navigate]);
 
@@ -122,7 +122,7 @@ const ConsumerLogin = () => {
         return;
       }
 
-      navigate("/consumer/profile");
+      navigate("/consumer/dashboard", { replace: true });
     } catch (networkError) {
       setError("Unable to connect to server. Please try again.");
     } finally {
@@ -153,7 +153,7 @@ const ConsumerLogin = () => {
           </button>
           <button
             className="cl-back-btn"
-            onClick={() => navigate("/consumer/market")}
+            onClick={() => navigate("/consumer/dashboard")}
           >
             Back to marketplace
           </button>
@@ -263,3 +263,4 @@ const ConsumerLogin = () => {
 };
 
 export default ConsumerLogin;
+

@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { collection, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase";
 import { getConsumerSession } from "../utils/consumerSession";
 import { clearAllAuth, isConsumerAuthenticated } from "../utils/auth";
-import { setPostLoginRedirect } from "../utils/buyNowFlow";
+import { setPostLoginRedirect, storeBuyNowItem } from "../utils/buyNowFlow";
 import "../style.css";
 import { useState } from "react";
 import UrgentDealsScroller from "../components/UrgentDealsScroller";
@@ -10,6 +12,8 @@ import UrgentDealsScroller from "../components/UrgentDealsScroller";
 const ConsumerDashboard = () => {
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [marketItems, setMarketItems] = useState([]);
+  const [marketLoading, setMarketLoading] = useState(true);
   const session = getConsumerSession();
 
   const categories = [
@@ -39,18 +43,22 @@ const ConsumerDashboard = () => {
     },
   ];
 
-  const quickDeals = [
-    { id: 1, title: "Tomatoes", offer: "Up to 35% off", eta: "Ends in 1 day" },
-    { id: 2, title: "Spinach Bundles", offer: "Up to 20% off", eta: "Ends today" },
-    { id: 3, title: "Bananas", offer: "Up to 28% off", eta: "Ends in 2 days" },
-  ];
-
-  const scrollerDeals = quickDeals.map((deal) => ({
-    id: deal.id,
-    title: deal.title,
-    badge: deal.offer,
-    meta: deal.eta,
-  }));
+  const scrollerDeals = marketItems
+    .filter((item) => Boolean(item.isUrgentDeal))
+    .map((item) => ({
+      id: item.id,
+      title: item.productName || item.name,
+      badge:
+        typeof item.discountPercent === "number"
+          ? `Up to ${item.discountPercent}% off`
+          : "Urgent deal",
+      meta: item.dealExpiryTime
+        ? `Ends ${new Date(
+            item.dealExpiryTime?.toDate?.() || item.dealExpiryTime
+          ).toLocaleString()}`
+        : "",
+      raw: item,
+    }));
 
   const handleStartShopping = () => {
     if (categories.length === 0) {
@@ -72,11 +80,67 @@ const ConsumerDashboard = () => {
     }
   };
 
+  const handleBuyNowItem = (item) => {
+    const payload = {
+      id: item.id,
+      productName: item.productName || item.name,
+      pricePerKg: Number(item.pricePerKg ?? item.price) || 0,
+      quantityKg: Number(item.quantityKg ?? item.quantity) || 0,
+      unit: item.unit || "kg",
+      farmerId: item.farmerId || item.ownerFarmerId,
+      farmerName: item.farmerName,
+      location: item.location,
+      category: item.category,
+      source: "firestore",
+    };
+
+    storeBuyNowItem(payload);
+
+    if (!isConsumerAuthenticated()) {
+      setPostLoginRedirect("/consumer/buy-now", payload);
+      navigate("/login/consumer", {
+        state: { redirectTo: "/consumer/buy-now", buyNowItem: payload },
+      });
+      return;
+    }
+
+    navigate("/consumer/buy-now", { state: { item: payload } });
+  };
+
   const handleLogout = () => {
     clearAllAuth();
     setShowProfileMenu(false);
     navigate("/", { replace: true });
   };
+
+  useEffect(() => {
+    const unsub = onSnapshot(
+      collection(db, "marketItems"),
+      (snapshot) => {
+        const data = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .sort((a, b) => {
+            const aTime =
+              a.createdAt?.toDate?.()?.getTime?.() ||
+              new Date(a.createdAt || 0).getTime() ||
+              0;
+            const bTime =
+              b.createdAt?.toDate?.()?.getTime?.() ||
+              new Date(b.createdAt || 0).getTime() ||
+              0;
+            return bTime - aTime;
+          });
+        setMarketItems(data);
+        setMarketLoading(false);
+      },
+      () => {
+        setMarketItems([]);
+        setMarketLoading(false);
+      }
+    );
+
+    return () => unsub();
+  }, []);
 
   return (
     <div className="cd-page">
@@ -99,7 +163,7 @@ const ConsumerDashboard = () => {
                   <p><strong>{session?.name || "Consumer"}</strong></p>
                   <p>{session?.email || "email@example.com"}</p>
                   <button onClick={() => navigate("/")}>Home</button>
-                  <button onClick={() => navigate("/consumer/market")}>
+                  <button onClick={() => navigate("/consumer/dashboard")}>
                     Marketplace
                   </button>
                   <button onClick={() => navigate("/consumer/profile")}>
@@ -196,6 +260,36 @@ const ConsumerDashboard = () => {
           </div>
         </section>
 
+        <section className="cd-section">
+          <div className="cd-section-head">
+            <p>Latest listings</p>
+            <h2>Newly added by farmers</h2>
+          </div>
+
+          {marketLoading ? (
+            <p className="market-empty">Loading products...</p>
+          ) : marketItems.length === 0 ? (
+            <p className="market-empty">No products available yet.</p>
+          ) : (
+            <div className="market-grid">
+              {marketItems.slice(0, 12).map((item) => (
+                <div key={item.id} className="market-card consumer-card">
+                  <h3>{item.productName || "Product"}</h3>
+                  <p>{item.category || "Category"}</p>
+                  <p>INR {item.pricePerKg ?? "--"} / {item.unit || "kg"}</p>
+                  <p>Available: {item.quantityKg ?? "--"} {item.unit || "kg"}</p>
+                  <button
+                    className="market-buy-btn"
+                    onClick={() => handleBuyNowItem(item)}
+                  >
+                    Buy Now
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
         <section className="cd-section cd-section-soft">
           <div className="cd-section-head">
             <p>Urgent offers</p>
@@ -207,8 +301,12 @@ const ConsumerDashboard = () => {
             emptyText="No urgent offers right now."
             cardClassName="cd-deal-card"
             showButton
-            buttonLabel="Go To Market"
-            onDealClick={() => navigate("/consumer/market")}
+            buttonLabel="Buy Now"
+            onDealClick={(deal) => {
+              if (deal?.raw) {
+                handleBuyNowItem(deal.raw);
+              }
+            }}
           />
         </section>
       </main>
@@ -217,3 +315,4 @@ const ConsumerDashboard = () => {
 };
 
 export default ConsumerDashboard;
+

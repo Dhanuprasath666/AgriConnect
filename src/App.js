@@ -6,7 +6,6 @@ import FarmerDashboard from "./pages/FarmerDashboard";
 import ConsumerDashboard from "./pages/ConsumerDashboard";
 import ConsumerCategory from "./pages/ConsumerCategory";
 import AddProduct from "./pages/AddProduct";
-import ConsumerMarket from "./pages/ConsumerMarket";
 import ConsumerLogin from "./pages/Consumerlogin";
 import FarmerRegister from "./pages/FarmerRegister";
 import Register from "./pages/Register";
@@ -66,7 +65,7 @@ function App() {
               </RequireFarmerAuth>
             }
           />
-          <Route path="/consumer/market" element={<ConsumerMarket />} />
+          <Route path="/consumer/dashboard" element={<ConsumerDashboard />} />
           <Route
             path="/consumer/buy-now"
             element={
@@ -102,3 +101,4 @@ function App() {
 }
 
 export default App;
+

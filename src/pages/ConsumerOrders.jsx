@@ -30,17 +30,14 @@ const ConsumerOrders = () => {
     setLoading(true);
     setError("");
 
-    const dataMap = new Map();
-
     const applySnapshot = (snapshot) => {
-      snapshot.docs.forEach((docSnap) => {
-        dataMap.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
-      });
-      const merged = Array.from(dataMap.values()).sort((a, b) => {
-        const aTime = a.createdAt?.toDate?.()?.getTime?.() || 0;
-        const bTime = b.createdAt?.toDate?.()?.getTime?.() || 0;
-        return bTime - aTime;
-      });
+      const merged = snapshot.docs
+        .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+        .sort((a, b) => {
+          const aTime = a.createdAt?.toDate?.()?.getTime?.() || 0;
+          const bTime = b.createdAt?.toDate?.()?.getTime?.() || 0;
+          return bTime - aTime;
+        });
       setOrders(merged);
       setLoading(false);
     };
@@ -55,18 +52,10 @@ const ConsumerOrders = () => {
       where("consumerId", "==", consumerKey),
       orderBy("createdAt", "desc")
     );
-    const qByMobile = query(
-      collection(db, "orders"),
-      where("consumerMobile", "==", consumerKey),
-      orderBy("createdAt", "desc")
-    );
-
     const unsubById = onSnapshot(qById, applySnapshot, handleError);
-    const unsubByMobile = onSnapshot(qByMobile, applySnapshot, handleError);
 
     return () => {
       unsubById();
-      unsubByMobile();
     };
   }, [consumerKey]);
 
@@ -101,7 +90,7 @@ const ConsumerOrders = () => {
                 <button onClick={() => navigate("/consumer/profile")}>
                   My Profile
                 </button>
-                <button onClick={() => navigate("/consumer/market")}>
+                <button onClick={() => navigate("/consumer/dashboard")}>
                   Go To Market
                 </button>
                 <button className="logout" onClick={handleLogout}>
@@ -118,7 +107,7 @@ const ConsumerOrders = () => {
           <h1>My Orders</h1>
           <button
             className="cd-btn cd-btn-primary"
-            onClick={() => navigate("/consumer/market")}
+            onClick={() => navigate("/consumer/dashboard")}
           >
             Go To Market
           </button>
@@ -133,7 +122,7 @@ const ConsumerOrders = () => {
             <p>No orders placed yet.</p>
             <button
               className="cd-btn cd-btn-primary"
-              onClick={() => navigate("/consumer/market")}
+              onClick={() => navigate("/consumer/dashboard")}
             >
               Start Shopping
             </button>
@@ -153,7 +142,7 @@ const ConsumerOrders = () => {
                       <p className="order-date">{dateLabel}</p>
                     </div>
                     <span className="order-status status-processing">
-                      {order.orderStatus || "Placed"}
+                      {order.status || "Placed"}
                     </span>
                   </div>
                   <div className="order-items">
@@ -166,7 +155,9 @@ const ConsumerOrders = () => {
                     </p>
                   </div>
                   <div className="order-footer">
-                    <p className="order-total">INR {order.totalPrice || 0}</p>
+                    <p className="order-total">
+                      INR {(order.price || 0) * (order.quantity || 0)}
+                    </p>
                   </div>
                 </div>
               );
@@ -179,3 +170,4 @@ const ConsumerOrders = () => {
 };
 
 export default ConsumerOrders;
+

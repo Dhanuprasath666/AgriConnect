@@ -81,7 +81,7 @@ body {
   justify-content: center;
 }
 .landing-container {
-  min-height: 70vh;        /* 🔥 reduced hero height */
+  min-height: 70vh;        /* ðŸ”¥ reduced hero height */
   padding-top: 70px;       /* navbar height compensation */
   padding-bottom: 60px;    /* breathing space */
 }
@@ -2383,7 +2383,7 @@ body {
   animation-play-state: paused;
 }
 
-/* Left → Right animation */
+/* Left â†’ Right animation */
 @keyframes moveRight {
   from {
     transform: translateX(-100%);
@@ -4664,6 +4664,12 @@ body {
   display: grid;
   place-items: center;
   cursor: pointer;
+}
+
+.fdv3-avatarIcon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
 }
 
 .fdv3-btn {
@@ -7085,3 +7091,4 @@ body {
 /* =======================
    BUBBLE BACKGROUND LAYER
 ======================= */
+

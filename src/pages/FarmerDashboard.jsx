@@ -1,5 +1,5 @@
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   collection,
@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 import "../style.css";
 import farmBg from "../assets/farm-bg.jpg";
+import wheatIcon from "../assets/wheat.png";
 import { db } from "../firebase";
 import {
   getCurrentFarmerId,
@@ -57,6 +58,7 @@ const FarmerDashboard = () => {
   const navigate = useNavigate();
   const [showProfile, setShowProfile] = useState(false);
   const [activeSection, setActiveSection] = useState("overview");
+  const profileMenuRef = useRef(null);
 
   const farmerId = useMemo(() => getCurrentFarmerId(), []);
   const normalizedFarmerId = useMemo(() => normalizeText(farmerId), [farmerId]);
@@ -340,6 +342,26 @@ const normalizedFarmerName = useMemo(
       clearInterval(intervalId);
     };
   }, [accessToken]);
+
+  useEffect(() => {
+    if (!showProfile) return;
+
+    const handleOutside = (event) => {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target)
+      ) {
+        setShowProfile(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("touchstart", handleOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("touchstart", handleOutside);
+    };
+  }, [showProfile]);
 
   useEffect(() => {
     const shouldUseManualWeather =
@@ -729,9 +751,9 @@ const normalizedFarmerName = useMemo(
 
             <button
               className="fdv3-btn fdv3-btn--ghost"
-              onClick={() => navigate("/consumer/market")}
+              onClick={() => navigate("/consumer/dashboard")}
             >
-              Open Consumer Market
+              Open Consumer Dashboard
             </button>
             <button
               className="fdv3-btn fdv3-btn--primary"
@@ -740,30 +762,33 @@ const normalizedFarmerName = useMemo(
               Add Product
             </button>
 
-            <div className="fd-profile">
+            <div
+              className="fd-profile cd-profile"
+              ref={profileMenuRef}
+              onMouseEnter={() => setShowProfile(true)}
+            >
               <button
                 className="fdv3-avatar"
                 type="button"
-                onClick={() => setShowProfile(!showProfile)}
+                onClick={() => setShowProfile((prev) => !prev)}
               >
-                {String((profile?.name || "F").trim()[0] || "F").toUpperCase()}
+                <img src={wheatIcon} alt="Farmer" className="fdv3-avatarIcon" />
               </button>
 
               {showProfile && (
-                <div className="fd-profile-menu">
-                  <p className="name">{profile?.name || "Farmer"}</p>
-                  <p className="location">
-                    {resolvedLocationLoading
-                      ? profile?.locationText || "Resolving..."
-                      : displayLocationLabel || profile?.locationText || "India"}
+                <div className="cd-profile-menu">
+                  <p>
+                    <strong>{profile?.name || farmerName || "Farmer"}</strong>
                   </p>
+                  <p>Farmer Account</p>
+                  <button onClick={() => navigate("/")}>Home</button>
                   <button
+                    className="logout"
                     onClick={() => {
                       setShowProfile(false);
                       clearAllAuth();
                       navigate("/", { replace: true });
                     }}
-                    className="logout"
                   >
                     Logout
                   </button>
@@ -802,7 +827,7 @@ const normalizedFarmerName = useMemo(
                   <div className="fd-miniTitle">Live weather</div>
                   <div className="fd-miniValue">
                     {typeof weather?.temperatureC === "number"
-                      ? `${weather.temperatureC.toFixed(1)}°C`
+                      ? `${weather.temperatureC.toFixed(1)}Â°C`
                       : "--"}
                     <span className="fd-miniSub">
                       {typeof weather?.humidityPercent === "number"
@@ -839,7 +864,7 @@ const normalizedFarmerName = useMemo(
               </button>
               <button
                 className="fdv3-btn fdv3-btn--ghost"
-                onClick={() => navigate("/consumer/market")}
+                onClick={() => navigate("/consumer/dashboard")}
               >
                 Preview marketplace
               </button>
@@ -875,7 +900,7 @@ const normalizedFarmerName = useMemo(
           <section id="weather" className="fd-card">
             <div className="fd-card__header">
               <div className="fd-card__title">
-                <span className="fd-card__icon">☁</span>
+                <span className="fd-card__icon">â˜</span>
                 <h3>Live Weather</h3>
               </div>
               <div className="fd-card__meta">
@@ -901,7 +926,7 @@ const normalizedFarmerName = useMemo(
                     <div className="fd-stat__label">Temperature</div>
                     <div className="fd-stat__value">
                       {typeof weather?.temperatureC === "number"
-                        ? `${weather.temperatureC.toFixed(1)}°C`
+                        ? `${weather.temperatureC.toFixed(1)}Â°C`
                         : "--"}
                     </div>
                     <div className="fd-stat__sub">
@@ -1025,7 +1050,7 @@ const normalizedFarmerName = useMemo(
           <section id="crop" className="fd-card">
             <div className="fd-card__header">
               <div className="fd-card__title">
-                <span className="fd-card__icon">⟲</span>
+                <span className="fd-card__icon">âŸ²</span>
                 <h3>Crop Status</h3>
               </div>
               <span className="fd-badge fd-badge--success">Healthy</span>
@@ -1144,7 +1169,7 @@ const normalizedFarmerName = useMemo(
           <section id="farm-health" className="fd-card">
             <div className="fd-card__header">
               <div className="fd-card__title">
-                <span className="fd-card__icon">⛆</span>
+                <span className="fd-card__icon">â›†</span>
                 <h3>Farm Health</h3>
               </div>
               <span className="fd-muted">Manual input</span>
@@ -1254,7 +1279,7 @@ const normalizedFarmerName = useMemo(
           <section id="revenue" className="fd-card fdv3-span2">
             <div className="fd-card__header">
               <div className="fd-card__title">
-                <span className="fd-card__icon">₹</span>
+                <span className="fd-card__icon">â‚¹</span>
                 <h3>Revenue Snapshot</h3>
               </div>
               <span className="fd-muted">Hardcoded demo values</span>
@@ -1296,7 +1321,7 @@ const normalizedFarmerName = useMemo(
           <section id="products" className="fd-card fdv3-span2">
             <div className="fd-card__header">
               <div className="fd-card__title">
-                <span className="fd-card__icon">☐</span>
+                <span className="fd-card__icon">â˜</span>
                 <h3>Your Products</h3>
               </div>
               <span className="fdv3-productCount">{products.length} listed</span>
@@ -1327,12 +1352,12 @@ const normalizedFarmerName = useMemo(
                             <strong>{p.productName || "Unnamed product"}</strong>
                             {p.isUrgentDeal && (
                               <span className="fd-badge fd-badge--danger">
-                                Urgent deal{timeLeft ? ` • ${timeLeft}` : ""}
+                                Urgent deal{timeLeft ? ` â€¢ ${timeLeft}` : ""}
                               </span>
                             )}
                           </div>
                           <div className="fd-muted">
-                            {p.category || "Category"} • {p.location || "Location"}
+                            {p.category || "Category"} â€¢ {p.location || "Location"}
                           </div>
                           <div className="fdv3-productMeta">
                             <span>
@@ -1453,3 +1478,4 @@ const normalizedFarmerName = useMemo(
 };
 
 export default FarmerDashboard;
+
