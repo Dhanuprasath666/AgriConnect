@@ -131,7 +131,7 @@ const ConsumerProfile = () => {
 
   const handleAddMoneyToWallet = (amount) => {
     setWalletBalance(walletBalance + amount);
-    alert(`â‚¹${amount} added to wallet successfully!`);
+    alert(`र${amount} added to wallet successfully!`);
   };
 
   const handleSubmitTicket = () => {
@@ -141,7 +141,7 @@ const ConsumerProfile = () => {
     }
 
     const ticket = {
-      id: `TKT${String(supportTickets.length + 1).padStart(3, "0")}`,
+      id: `${String(supportTickets.length + 1).padStart(3, "0")}`,
       subject: newTicket.subject,
       status: "Open",
       date: new Date().toISOString().split("T")[0],
@@ -165,7 +165,7 @@ const ConsumerProfile = () => {
     <div className="profile-container">
       <div className="profile-header">
         <button className="profile-back-btn" onClick={() => navigate("/consumer")}>
-          â† Back to Dashboard
+          Back to Dashboard
         </button>
         <h1>My Profile</h1>
         <button className="profile-logout-btn" onClick={handleLogout}>
@@ -212,34 +212,34 @@ const ConsumerProfile = () => {
             className={`profile-nav-tab ${activeSection === "wallet" ? "active" : ""}`}
             onClick={() => setActiveSection("wallet")}
           >
-            ðŸ’° My Wallet
+            My Wallet
           </button>
           <button
             className={`profile-nav-tab ${activeSection === "orders" ? "active" : ""}`}
             onClick={() => setActiveSection("orders")}
           >
-            ðŸ“¦ Orders
+            Orders
           </button>
           <button
             className={`profile-nav-tab ${activeSection === "support" ? "active" : ""}`}
             onClick={() => setActiveSection("support")}
           >
-            ðŸ†˜ Help & Support
+            Help & Support
           </button>
         </div>
 
         {/* My Wallet Section */}
         {activeSection === "wallet" && (
           <div className="profile-section wallet-section">
-            <h2>ðŸ’° My Wallet</h2>
+            <h2> My Wallet</h2>
             <div className="wallet-card">
               <div className="wallet-balance">
                 <p>Total Balance</p>
-                <h3>â‚¹{walletBalance}</h3>
+                <h3>र{walletBalance}</h3>
               </div>
               <div className="wallet-info">
-                <p>ðŸ’¡ Use wallet balance for faster checkout</p>
-                <p>âœ¨ Earn cashback on every purchase</p>
+                <p> Use wallet balance for faster checkout</p>
+                <p>Earn cashback on every purchase</p>
               </div>
             </div>
 
@@ -247,13 +247,13 @@ const ConsumerProfile = () => {
               <h3>Add Money</h3>
               <div className="wallet-add-buttons">
                 <button className="add-money-btn" onClick={() => handleAddMoneyToWallet(500)}>
-                  + â‚¹500
+                  + र500
                 </button>
                 <button className="add-money-btn" onClick={() => handleAddMoneyToWallet(1000)}>
-                  + â‚¹1000
+                  + र1000
                 </button>
                 <button className="add-money-btn" onClick={() => handleAddMoneyToWallet(2000)}>
-                  + â‚¹2000
+                  + र2000
                 </button>
                 <button className="add-money-btn custom" onClick={() => alert("Custom amount dialog")}>
                   Custom Amount
@@ -269,21 +269,21 @@ const ConsumerProfile = () => {
                     <p className="transaction-type">Order Payment</p>
                     <p className="transaction-date">2025-02-07</p>
                   </div>
-                  <span className="transaction-amount debit">-â‚¹120</span>
+                  <span className="transaction-amount debit">र120</span>
                 </div>
                 <div className="transaction-item">
                   <div className="transaction-info">
                     <p className="transaction-type">Cashback Received</p>
                     <p className="transaction-date">2025-02-06</p>
                   </div>
-                  <span className="transaction-amount credit">+â‚¹20</span>
+                  <span className="transaction-amount credit">+र20</span>
                 </div>
                 <div className="transaction-item">
                   <div className="transaction-info">
                     <p className="transaction-type">Wallet Top-up</p>
                     <p className="transaction-date">2025-02-05</p>
                   </div>
-                  <span className="transaction-amount credit">+â‚¹1000</span>
+                  <span className="transaction-amount credit">+र1000</span>
                 </div>
               </div>
             </div>
@@ -293,7 +293,7 @@ const ConsumerProfile = () => {
         {/* Orders Section */}
         {activeSection === "orders" && (
           <div className="profile-section orders-section">
-            <h2>ðŸ“¦ My Orders</h2>
+            <h2>My Orders</h2>
 
             {ordersLoading ? (
               <div className="empty-state">
@@ -328,7 +328,7 @@ const ConsumerProfile = () => {
                     </div>
 
                     <div className="order-footer">
-                      <p className="order-total">â‚¹{order.total}</p>
+                      <p className="order-total">र{order.total}</p>
                       <div className="order-actions">
                         <button 
                           className="order-btn secondary"
@@ -354,32 +354,32 @@ const ConsumerProfile = () => {
         {/* Help & Support Section */}
         {activeSection === "support" && (
           <div className="profile-section support-section">
-            <h2>ðŸ†˜ Help & Support</h2>
+            <h2>Help & Support</h2>
 
             <div className="support-grid">
               <div className="support-card">
-                <div className="support-icon">ðŸ“±</div>
+                <div className="support-icon"></div>
                 <h3>Call Us</h3>
                 <p>+91 XXXX-XXXX-XX</p>
                 <p className="support-time">Available 9 AM - 6 PM</p>
               </div>
 
               <div className="support-card">
-                <div className="support-icon">âœ‰ï¸</div>
+                <div className="support-icon"></div>
                 <h3>Email Us</h3>
                 <p>support@agriconnect.com</p>
                 <p className="support-time">Response within 24 hours</p>
               </div>
 
               <div className="support-card">
-                <div className="support-icon">ðŸ’¬</div>
+                <div className="support-icon"></div>
                 <h3>Live Chat</h3>
                 <p>Chat with our team</p>
                 <p className="support-time">9 AM - 6 PM</p>
               </div>
 
               <div className="support-card">
-                <div className="support-icon">â“</div>
+                <div className="support-icon"></div>
                 <h3>FAQ</h3>
                 <p>Common questions answered</p>
                 <p className="support-time">Available 24/7</p>

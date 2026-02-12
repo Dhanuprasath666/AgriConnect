@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../style.css";
 import { setCurrentFarmerId, setCurrentFarmerName, setCurrentFarmerDetails } from "../lib/currentFarmer";
+import { markCurrentFarmerAsNewlyRegistered } from "../lib/subscription";
+import { addOrUpdateFarmerRegistration } from "../lib/farmerVerification";
 
 const FarmerRegister = () => {
   const navigate = useNavigate();
@@ -125,6 +127,7 @@ const FarmerRegister = () => {
       const farmerId = form.phone.replace(/\D/g, "") || "demo-farmer";
       setCurrentFarmerId(farmerId);
       setCurrentFarmerName(form.name.trim() || "Farmer");
+      markCurrentFarmerAsNewlyRegistered();
 
       // Store all farmer details
       setCurrentFarmerDetails({
@@ -142,9 +145,19 @@ const FarmerRegister = () => {
         landArea: form.landArea.trim(),
         primaryCrops: form.primaryCrops.trim(),
       });
+      addOrUpdateFarmerRegistration({
+        farmerId,
+        name: form.name.trim(),
+        phone: form.phone.replace(/\D/g, ""),
+        village: form.village.trim(),
+        district: form.district.trim(),
+        state: form.state.trim(),
+        registeredAt: new Date().toISOString(),
+        isVerified: false,
+      });
 
       setTimeout(() => {
-        navigate("/farmer/dashboard");
+        navigate("/farmer/verification-pending", { replace: true });
       }, 700);
     } catch (requestError) {
       setError("Unable to connect to server. Please try again.");

@@ -46,12 +46,16 @@ export function setCurrentFarmerAccessToken(token) {
 
 export function clearCurrentFarmerSession() {
   if (typeof window === "undefined" || !window.localStorage) return;
+  const farmerId = window.localStorage.getItem("ac_farmer_id");
   window.localStorage.removeItem("ac_farmer_id");
   window.localStorage.removeItem("ac_farmer_name");
   window.localStorage.removeItem("ac_farmer_access_token");
-  window.localStorage.removeItem("ac_farmer_details");   // 👈 add this
+  window.localStorage.removeItem("ac_farmer_details");
+  if (farmerId) {
+    window.localStorage.removeItem(`ac_farmer_subscription_${farmerId}`);
+    window.localStorage.removeItem(`ac_farmer_new_registration_${farmerId}`);
+  }
 }
-
 
 // ===============================
 // Farmer Details Storage
@@ -59,10 +63,7 @@ export function clearCurrentFarmerSession() {
 
 export function setCurrentFarmerDetails(details) {
   if (typeof window === "undefined" || !window.localStorage) return;
-  window.localStorage.setItem(
-    "ac_farmer_details",
-    JSON.stringify(details)
-  );
+  window.localStorage.setItem("ac_farmer_details", JSON.stringify(details));
 }
 
 export function getCurrentFarmerDetails() {
@@ -77,4 +78,3 @@ export function getCurrentFarmerDetails() {
     return null;
   }
 }
-

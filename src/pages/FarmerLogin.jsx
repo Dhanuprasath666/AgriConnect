@@ -6,6 +6,8 @@ import {
   setCurrentFarmerId,
   setCurrentFarmerName,
 } from "../lib/currentFarmer";
+import { clearCurrentFarmerNewRegistrationFlag } from "../lib/subscription";
+import { isFarmerPendingVerification } from "../lib/farmerVerification";
 import { isFarmerAuthenticated } from "../utils/auth";
 import { clearConsumerSession } from "../utils/consumerSession";
 
@@ -79,6 +81,11 @@ const FarmerLogin = () => {
         setCurrentFarmerAccessToken(
           typeof data?.access_token === "string" ? data.access_token : ""
         );
+        clearCurrentFarmerNewRegistrationFlag();
+        if (isFarmerPendingVerification(farmerId)) {
+          navigate("/farmer/verification-pending");
+          return;
+        }
         navigate("/farmer/dashboard");
         return;
       }

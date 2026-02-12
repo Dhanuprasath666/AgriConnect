@@ -84,7 +84,7 @@ const AddProduct = () => {
   return (
     <div className="market-container">
       <form className="add-form" onSubmit={handleSubmit}>
-        <h2>Add Product</h2>
+        <h2>Add Crop</h2>
 
         <input
           type="text"

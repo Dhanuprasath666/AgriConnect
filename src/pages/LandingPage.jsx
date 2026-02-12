@@ -133,6 +133,12 @@ const LandingPage = () => {
         <div className="lp-nav-links">
           <a href="#features">Features</a>
           <a href="#deals">Deals</a>
+          <button
+            className="lp-nav-login"
+            onClick={() => navigate("/employee/portal")}
+          >
+            Employee Portal
+          </button>
           <button className="lp-nav-login" onClick={openFarmerLoginFromTop}>
             Farmer Login
           </button>

@@ -7,7 +7,6 @@ const Sidebar = () => {
   const path = location.pathname.toLowerCase();
 
   const isFarmer = path.startsWith("/farmer");
-  const isConsumer = path.startsWith("/consumer");
 
   const dashboardRoute = isFarmer ? "/farmer/dashboard" : "/consumer";
   const loginRoute = isFarmer ? "/login/farmer" : "/login/consumer";
@@ -139,6 +138,34 @@ const Sidebar = () => {
             />
             <path
               d="M9 9v10M15 9v10"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </NavLink>
+
+        <NavLink
+          to="/employee/portal"
+          aria-label="Employee Portal"
+          data-label="Employee"
+          className={({ isActive }) =>
+            `ac-sidebar-link ac-sidebar-icon${isActive ? " is-active" : ""}`
+          }
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7l7-4z"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M9.5 12.5l1.7 1.7 3.3-3.3"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"

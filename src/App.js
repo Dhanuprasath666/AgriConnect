@@ -16,6 +16,11 @@ import SidebarLayout from "./components/SidebarLayout";
 import ConsumerOrders from "./pages/ConsumerOrders";
 import RequireConsumerAuth from "./components/RequireConsumerAuth";
 import RequireFarmerAuth from "./components/RequireFarmerAuth";
+import RequireFarmerVerification from "./components/RequireFarmerVerification";
+import RequireFarmerSubscription from "./components/RequireFarmerSubscription";
+import FarmerSubscription from "./pages/FarmerSubscription";
+import EmployeePortal from "./pages/EmployeePortal";
+import FarmerVerificationPending from "./pages/FarmerVerificationPending";
 
 function App() {
   return (
@@ -52,7 +57,17 @@ function App() {
             path="/farmer/dashboard"
             element={
               <RequireFarmerAuth>
-                <FarmerDashboard />
+                <RequireFarmerVerification>
+                  <FarmerDashboard />
+                </RequireFarmerVerification>
+              </RequireFarmerAuth>
+            }
+          />
+          <Route
+            path="/farmer/verification-pending"
+            element={
+              <RequireFarmerAuth>
+                <FarmerVerificationPending />
               </RequireFarmerAuth>
             }
           />
@@ -61,7 +76,19 @@ function App() {
             path="/farmer/add-product"
             element={
               <RequireFarmerAuth>
-                <AddProduct />
+                <RequireFarmerVerification>
+                  <RequireFarmerSubscription>
+                    <AddProduct />
+                  </RequireFarmerSubscription>
+                </RequireFarmerVerification>
+              </RequireFarmerAuth>
+            }
+          />
+          <Route
+            path="/farmer/subscription"
+            element={
+              <RequireFarmerAuth>
+                <FarmerSubscription />
               </RequireFarmerAuth>
             }
           />
@@ -91,6 +118,7 @@ function App() {
             }
           />
           <Route path="/consumer/:category" element={<ConsumerCategory />} />
+          <Route path="/employee/portal" element={<EmployeePortal />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

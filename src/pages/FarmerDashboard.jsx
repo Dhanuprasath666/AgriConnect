@@ -24,6 +24,8 @@ import {
   getCurrentFarmerAccessToken,
 } from "../lib/currentFarmer";
 import { clearAllAuth } from "../utils/auth";
+import { hasActiveCurrentFarmerSubscription } from "../lib/subscription";
+import { isFarmerVerified } from "../lib/farmerVerification";
 
 
 import { fetchOpenMeteoWeather } from "../lib/weather";
@@ -70,6 +72,11 @@ const normalizedFarmerName = useMemo(
 
   const accessToken = useMemo(() => getCurrentFarmerAccessToken(), []);
   const farmerDetails = useMemo(() => getCurrentFarmerDetails(), []);
+  const hasActiveSubscription = useMemo(
+    () => hasActiveCurrentFarmerSubscription(),
+    []
+  );
+  const verifiedFarmer = useMemo(() => isFarmerVerified(farmerId), [farmerId]);
 
 
   const [profile, setProfile] = useState(null);
@@ -759,7 +766,7 @@ const normalizedFarmerName = useMemo(
               className="fdv3-btn fdv3-btn--primary"
               onClick={() => navigate("/farmer/add-product")}
             >
-              Add Product
+              Add Crop
             </button>
 
             <div
@@ -778,7 +785,21 @@ const normalizedFarmerName = useMemo(
               {showProfile && (
                 <div className="cd-profile-menu">
                   <p>
-                    <strong>{profile?.name || farmerName || "Farmer"}</strong>
+                    <strong>
+                      {profile?.name || farmerName || "Farmer"}
+                      {hasActiveSubscription && (
+                        <span
+                          className="fd-subscription-mark"
+                          title="Premium subscribed"
+                          aria-label="Premium subscribed"
+                        >
+                          Premium
+                        </span>
+                      )}
+                    </strong>
+                  </p>
+                  <p className="fd-subscription-status">
+                    {hasActiveSubscription ? "Premium subscribed" : "Not subscribed"}
                   </p>
                   <p>Farmer Account</p>
                   <button onClick={() => navigate("/")}>Home</button>
@@ -807,7 +828,24 @@ const normalizedFarmerName = useMemo(
           <div className="fd-hero__content">
             <div>
               <p className="fd-hero__kicker">Welcome back</p>
-              <h2 className="fd-hero__title">{profile?.name || farmerName}</h2>
+              <h2 className="fd-hero__title">
+                {profile?.name || farmerName}
+                {hasActiveSubscription && (
+                  <span
+                    className="fd-subscription-mark"
+                    title="Premium subscribed"
+                    aria-label="Premium subscribed"
+                  >
+                    Premium
+                  </span>
+                )}
+              </h2>
+              <p className="fd-verification-status">
+                {verifiedFarmer ? "Verified Farmer" : "Verification Pending"}
+              </p>
+              <p className="fd-subscription-status fd-subscription-status--hero">
+                {hasActiveSubscription ? "Premium subscribed" : "Not subscribed"}
+              </p>
               <p className="fd-hero__subtitle">
                 Track urgent deals, manage inventory, and get rule-based alerts
                 from live weather signals.
@@ -860,7 +898,7 @@ const normalizedFarmerName = useMemo(
                 className="fdv3-btn fdv3-btn--primary"
                 onClick={() => navigate("/farmer/add-product")}
               >
-                Create listing
+                Add Crop
               </button>
               <button
                 className="fdv3-btn fdv3-btn--ghost"
@@ -1329,7 +1367,7 @@ const normalizedFarmerName = useMemo(
                 className="fdv3-btn fdv3-btn--ghost"
                 onClick={() => navigate("/farmer/add-product")}
               >
-                Add another
+                Add another crop
               </button>
             </div>
             <div className="fd-card__body">
@@ -1478,4 +1516,5 @@ const normalizedFarmerName = useMemo(
 };
 
 export default FarmerDashboard;
+
 
